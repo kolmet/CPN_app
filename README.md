@@ -157,3 +157,5 @@ mateix codi que ja teniu desplegat a Vercel.
   restant perquè algú altre la pugui reservar just després, encara que el
   torn original no hagi arribat al final teòric.
 - Pots editar plantes/zones a `src/config.js` (constant `FLOORS`).
+
+actualitzat
