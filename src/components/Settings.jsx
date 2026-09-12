@@ -19,8 +19,8 @@ export default function Settings({ identity, onClose, onForget }) {
   async function addEmail() {
     const clean = newEmail.trim().toLowerCase();
     if (!clean) return;
-    const ok = await registerDoorEmail(identity.door, clean);
-    if (ok) {
+    const result = await registerDoorEmail(identity.door, clean);
+    if (result.ok) {
       setEmails(await getEmailsForDoor(identity.door));
       setNewEmail("");
       setMsg("Correu afegit a la porta " + identity.door + ".");

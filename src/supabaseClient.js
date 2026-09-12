@@ -16,8 +16,13 @@ export async function findDoorByEmail(email) {
   return data?.door ?? null;
 }
 export async function registerDoorEmail(door, email) {
+  const { data: existing } = await supabase.from("door_emails").select("door").eq("email", email).maybeSingle();
+  if (existing) {
+    if (existing.door === door) return { ok: true }; // ja hi és, mateixa porta: no és un error
+    return { ok: false, reason: "other_door", existingDoor: existing.door };
+  }
   const { error } = await supabase.from("door_emails").insert({ door, email });
-  return !error;
+  return { ok: !error, reason: error ? "insert_error" : null };
 }
 export async function getEmailsForDoor(door) {
   const { data } = await supabase.from("door_emails").select("email").eq("door", door);

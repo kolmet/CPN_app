@@ -48,8 +48,14 @@ export default function Onboarding({ onComplete }) {
     setBusy(true); setErr("");
     try {
       const cleanEmail = email.trim().toLowerCase();
-      const okEmail = await registerDoorEmail(finalDoor, cleanEmail);
-      if (!okEmail) { setErr("Aquest correu ja està registrat amb una altra porta."); setBusy(false); return; }
+      const result = await registerDoorEmail(finalDoor, cleanEmail);
+      if (!result.ok) {
+        setErr(result.reason === "other_door"
+          ? `Aquest correu ja està registrat amb la porta ${result.existingDoor}.`
+          : "Hi ha hagut un problema desant les dades. Torna-ho a provar.");
+        setBusy(false);
+        return;
+      }
       if (persistZone) await setDoorZone(finalDoor, zoneId);
       onComplete({ email: cleanEmail, door: finalDoor, zone: zoneId });
     } catch (e) {
