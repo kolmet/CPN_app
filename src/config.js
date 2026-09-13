@@ -11,6 +11,9 @@ export const FLOORS = [
     { id: "p2-a", name: "Zona A" },
     { id: "p2-b", name: "Zona B" },
   ]},
+  { id: "terrat", name: "Terrat", zones: [
+    { id: "terrat-comuna", name: "Zona comuna" },
+  ]},
 ];
 
 export const FLAT_ZONES = FLOORS.flatMap(f => f.zones.map(z => ({ ...z, floorId: f.id, floorName: f.name })));
