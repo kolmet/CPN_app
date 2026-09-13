@@ -275,138 +275,6 @@ export function ClockIcon({ color = "currentColor", size = 22 }) {
   );
 }
 
-export function DoorPlantIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <rect x="10" y="8" width="28" height="34" rx="2" />
-        <path d="M24 8v34" />
-        <circle cx="18" cy="26" r="1.2" fill={color} />
-        <circle cx="30" cy="26" r="1.2" fill={color} />
-        <path d="M11 8c0-4 2-6 5-7" />
-        <circle cx="17" cy="4" r="2.2" />
-      </g>
-    </svg>
-  );
-}
-
-export function BroomIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <path d="M33 7 L15 34" />
-        <path d="M15 34 L8 39 M15 34 L11 43 M15 34 L17 43 M15 34 L21 40" />
-        <path d="M36 10l2.5 2.5M39 6l2.5 2.5" />
-      </g>
-    </svg>
-  );
-}
-
-export function BasketIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <path d="M9 21h30l-4.5 19h-21z" />
-        <path d="M15 21c0-7 4-13 9-13s9 6 9 13" />
-        <path d="M18 21v-6M24 21v-8M30 21v-6" />
-        <path d="M13 27h22M14.5 33h19" />
-      </g>
-    </svg>
-  );
-}
-
-export function ClothespinIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <path d="M19 6v36" />
-        <path d="M29 6v36" />
-        <path d="M19 6c0-3.5 10-3.5 10 0" />
-        <circle cx="24" cy="15" r="3.4" />
-      </g>
-    </svg>
-  );
-}
-
-export function NoSmokingIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <rect x="9" y="23" width="21" height="5.5" rx="1" />
-        <path d="M30 23l4.5 1v3.5l-4.5 1" />
-        <path d="M13 18c2.5-2 -2-4.5 0-8" />
-        <circle cx="24" cy="24" r="18" />
-        <path d="M11 11l26 26" />
-      </g>
-    </svg>
-  );
-}
-
-export function NoPetIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <circle cx="24" cy="29" r="5.5" />
-        <circle cx="15" cy="19" r="3" />
-        <circle cx="22" cy="13" r="3" />
-        <circle cx="30" cy="13" r="3" />
-        <circle cx="35" cy="20" r="3" />
-        <circle cx="24" cy="24" r="18" />
-        <path d="M11 11l26 26" />
-      </g>
-    </svg>
-  );
-}
-
-export function CalendarCheckIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <rect x="7" y="10" width="34" height="30" rx="3" />
-        <path d="M7 18h34" />
-        <path d="M16 6v8M32 6v8" />
-        <path d="M16 27l5 5 11-12" />
-      </g>
-    </svg>
-  );
-}
-
-export function PeopleHeartIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <circle cx="14" cy="21" r="5" />
-        <path d="M6 41c0-8 4-12 8-12s8 4 8 12" />
-        <circle cx="34" cy="21" r="5" />
-        <path d="M26 41c0-8 4-12 8-12s8 4 8 12" />
-        <path d="M24 10c-2-3-7-2-7 2 0 3.5 7 8.5 7 8.5s7-5 7-8.5c0-4-5-5-7-2z" />
-      </g>
-    </svg>
-  );
-}
-
-export function SpeechBubbleIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <path d="M7 12h21a4 4 0 0 1 4 4v9a4 4 0 0 1-4 4H16l-6 5v-5H7a4 4 0 0 1-4-4v-9a4 4 0 0 1 4-4z" transform="translate(1,0)" />
-        <path d="M29 21h9a3 3 0 0 1 3 3v5a3 3 0 0 1-3 3v4l-5-4h-4a3 3 0 0 1-3-3" />
-      </g>
-    </svg>
-  );
-}
-
-export function ChairIcon({ color = "currentColor", size = 28 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
-      <g stroke={color} {...strokeProps}>
-        <path d="M14 7c0-2 2-3 4-3h12c2 0 4 1 4 3v17H14z" />
-        <rect x="12" y="24" width="24" height="4" />
-        <path d="M14 28v11M34 28v11M18 28l-1.5 11M30 28l1.5 11" />
-      </g>
-    </svg>
-  );
-}
 
 const ICONS = {
   washer: WasherIcon,
@@ -415,17 +283,8 @@ const ICONS = {
   kitchen: KitchenIcon,
   movement: MovementIcon,
   clock: ClockIcon,
-  doorplant: DoorPlantIcon,
-  broom: BroomIcon,
-  basket: BasketIcon,
-  clothespin: ClothespinIcon,
-  nosmoking: NoSmokingIcon,
-  nopet: NoPetIcon,
-  calendarcheck: CalendarCheckIcon,
-  peopleheart: PeopleHeartIcon,
-  speech: SpeechBubbleIcon,
-  chair: ChairIcon,
 };
+
 
 // Rajola quadrada de color amb la icona centrada. Fes servir això per a
 // cada apartat principal de l'app (bugaderia, hostes, estadístiques...).
