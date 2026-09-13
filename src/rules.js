@@ -1,44 +1,45 @@
 // Normes d'ús transcrites dels documents "normes provisionals" de cada
-// espai. Edita aquest fitxer quan canviïn les normes reals — no cal tocar
-// cap altre component.
+// espai, amb la icona corresponent de cada punt (com al cartell). Edita
+// aquest fitxer quan canviïn les normes reals — no cal tocar cap altre
+// component.
 export const SPACE_RULES = {
   bugaderia: {
     title: "Espai Bugaderies i Estenedors",
     items: [
-      "Fem servir el sistema de reserves.",
-      "Cuidem el material i els electrodomèstics.",
-      "Recollida puntual de la roba de rentadores, assecadors i estenedors.",
-      "No deixem estris desendreçats (cossis, pinces, roba, carro, pot de sabó, etc.).",
-      "Deixem l'espai per tornar a ser usat.",
-      "Horari d'ús de 8h a 22h.",
-      "Davant d'un conflicte d'usos, prioritzem el diàleg.",
-      "Totes som responsables de cuidar aquest espai.",
+      { icon: "calendar", text: "Fem servir el sistema de reserves." },
+      { icon: "washer", text: "Cuidem el material i els electrodomèstics." },
+      { icon: "basket", text: "Recollida puntual de la roba de rentadores, assecadors i estenedors." },
+      { icon: "clothespin", text: "No deixem estris desendreçats (cossis, pinces, roba, carro, pot de sabó, etc.)." },
+      { icon: "basket", text: "Deixem l'espai per tornar a ser usat." },
+      { icon: "clock", text: "Horari d'ús de 8h a 22h." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },
   hostes: {
     title: "Espai d'Habitacions de Convidades",
     items: [
-      "Tinguem cura del mobiliari. És de totes! Fem-ne un ús responsable i comuniquem qualsevol incidència.",
-      "Deixem l'espai, recollit, net i endreçat.",
-      "Netegem la roba que es faci servir i posem-ne de neta.",
-      "Les habitacions de convidades són espais sense fum.",
-      "Fem servir el sistema de reserves.",
-      "No hi poden accedir animals.",
-      "Totes som responsables de cuidar aquest espai.",
+      { icon: "door", text: "Tinguem cura del mobiliari. És de totes! Fem-ne un ús responsable i comuniquem qualsevol incidència." },
+      { icon: "broom", text: "Deixem l'espai, recollit, net i endreçat." },
+      { icon: "washer", text: "Netegem la roba que es faci servir i posem-ne de neta." },
+      { icon: "nosmoking", text: "Les habitacions de convidades són espais sense fum." },
+      { icon: "calendar", text: "Fem servir el sistema de reserves." },
+      { icon: "nodog", text: "No hi poden accedir animals." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },
   polivalent: {
     title: "Espai Polivalent",
     items: [
-      "Respectem totes les activitats que s'hi fan.",
-      "Respectem els horaris i el volum.",
-      "Deixem l'espai com ens agradaria trobar-lo.",
-      "Cuidem el material i el mobiliari.",
-      "Fem servir el sistema de reserves.",
-      "Davant d'un conflicte d'usos, prioritzem el diàleg.",
-      "La sala és un espai sense fum.",
-      "No hi poden accedir animals amb pèl.",
-      "Totes som responsables de cuidar aquest espai.",
+      { icon: "people", text: "Respectem totes les activitats que s'hi fan." },
+      { icon: "clock", text: "Respectem els horaris i el volum." },
+      { icon: "sparkle", text: "Deixem l'espai com ens agradaria trobar-lo." },
+      { icon: "chair", text: "Cuidem el material i el mobiliari." },
+      { icon: "calendar", text: "Fem servir el sistema de reserves." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
+      { icon: "nosmoking", text: "La sala és un espai sense fum." },
+      { icon: "nodog", text: "No hi poden accedir animals amb pèl." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },
   // ⚠️ Provisional: no ens vas passar un document per a aquest espai, així
@@ -47,15 +48,15 @@ export const SPACE_RULES = {
   moviment: {
     title: "Sala de Moviment",
     items: [
-      "Respectem l'activitat que s'hi fa i el silenci si algú ho necessita.",
-      "Respectem els horaris reservats.",
-      "Deixem l'espai net i endreçat, com ens agradaria trobar-lo.",
-      "Cuidem el material i el terra (parquet).",
-      "Fem servir el sistema de reserves.",
-      "Davant d'un conflicte d'usos, prioritzem el diàleg.",
-      "És un espai sense fum.",
-      "No hi poden accedir animals amb pèl.",
-      "Totes som responsables de cuidar aquest espai.",
+      { icon: "people", text: "Respectem l'activitat que s'hi fa i el silenci si algú ho necessita." },
+      { icon: "clock", text: "Respectem els horaris reservats." },
+      { icon: "broom", text: "Deixem l'espai net i endreçat, com ens agradaria trobar-lo." },
+      { icon: "movement", text: "Cuidem el material i el terra (parquet)." },
+      { icon: "calendar", text: "Fem servir el sistema de reserves." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
+      { icon: "nosmoking", text: "És un espai sense fum." },
+      { icon: "nodog", text: "No hi poden accedir animals amb pèl." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },
 };

@@ -1,6 +1,28 @@
 import React, { useState } from "react";
 import { COLOR, MODULES, ENABLE_DONT_SHOW_AGAIN } from "../config";
 import { SPACE_RULES } from "../rules";
+import {
+  DoorPlantIcon, BroomIcon, WasherIcon, NoSmokingIcon, CalendarCheckIcon,
+  NoDogIcon, PeopleHeartIcon, ChairIcon, SpeechBubblesIcon, BasketIcon,
+  ClothespinIcon, SparkleFrameIcon, ClockIcon, MovementIcon,
+} from "../icons";
+
+const ICONS = {
+  door: DoorPlantIcon,
+  broom: BroomIcon,
+  washer: WasherIcon,
+  nosmoking: NoSmokingIcon,
+  calendar: CalendarCheckIcon,
+  nodog: NoDogIcon,
+  people: PeopleHeartIcon,
+  chair: ChairIcon,
+  speech: SpeechBubblesIcon,
+  basket: BasketIcon,
+  clothespin: ClothespinIcon,
+  sparkle: SparkleFrameIcon,
+  clock: ClockIcon,
+  movement: MovementIcon,
+};
 
 export default function RulesGate({ moduleKey, children }) {
   const [accepted, setAccepted] = useState(false);
@@ -19,9 +41,20 @@ export default function RulesGate({ moduleKey, children }) {
         <p className="text-xs mb-4" style={{ color: COLOR.inkSoft }}>
           Normes provisionals de la cooperativa. Cal llegir-les i acceptar-les per poder fer una reserva.
         </p>
-        <ol className="space-y-2.5 mb-5 text-sm list-decimal list-inside" style={{ color: COLOR.ink }}>
-          {rules.items.map((r, i) => <li key={i}>{r}</li>)}
-        </ol>
+
+        <div className="space-y-3 mb-5">
+          {rules.items.map((item, i) => {
+            const Icon = ICONS[item.icon];
+            return (
+              <div key={i} className="flex items-center gap-3">
+                <div className="shrink-0 flex items-center justify-center rounded-full" style={{ width: 34, height: 34, background: style.bg }}>
+                  {Icon && <Icon color={style.ink} size={18} />}
+                </div>
+                <p className="text-sm" style={{ color: COLOR.ink }}>{item.text}</p>
+              </div>
+            );
+          })}
+        </div>
 
         {ENABLE_DONT_SHOW_AGAIN && (
           <label className="flex items-center gap-2 text-xs mb-4" style={{ color: COLOR.inkSoft }}>
