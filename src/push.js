@@ -1,4 +1,5 @@
 import { supabase } from "./supabaseClient";
+import { hashEmail } from "./crypto";
 
 function urlBase64ToUint8Array(base64String) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -37,8 +38,9 @@ export async function enablePushNotifications(email) {
   }
 
   const json = subscription.toJSON();
+  const emailHash = await hashEmail(email);
   const { error } = await supabase.from("push_subscriptions").upsert(
-    { email, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
+    { email_hash: emailHash, endpoint: json.endpoint, p256dh: json.keys.p256dh, auth: json.keys.auth },
     { onConflict: "endpoint" }
   );
   if (error) throw error;
