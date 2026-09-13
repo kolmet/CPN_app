@@ -4,7 +4,8 @@ import { SPACE_RULES } from "../rules";
 import {
   DoorPlantIcon, BroomIcon, WasherIcon, NoSmokingIcon, CalendarCheckIcon,
   NoDogIcon, PeopleHeartIcon, ChairIcon, SpeechBubblesIcon, BasketIcon,
-  ClothespinIcon, SparkleFrameIcon, ClockIcon, MovementIcon,
+  ClothespinIcon, SparkleFrameIcon, ClockIcon, MovementIcon, BikeIcon, BarefootIcon,
+  BatteryIcon, LockIcon,
 } from "../icons";
 
 const ICONS = {
@@ -22,6 +23,10 @@ const ICONS = {
   sparkle: SparkleFrameIcon,
   clock: ClockIcon,
   movement: MovementIcon,
+  bike: BikeIcon,
+  barefoot: BarefootIcon,
+  battery: BatteryIcon,
+  lock: LockIcon,
 };
 
 export default function RulesGate({ moduleKey, children }) {

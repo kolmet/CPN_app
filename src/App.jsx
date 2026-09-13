@@ -17,6 +17,7 @@ const SPACE_IDS = {
   hostes: ["room-p1", "room-p2"],
   polivalent: ["room-polivalent"],
   moviment: ["room-moviment"],
+  bicicletes: ["room-bicicletes"],
 };
 
 export default function App() {
@@ -95,6 +96,7 @@ export default function App() {
         {screen === "hostes" && <RulesGate moduleKey="hostes"><SpaceTab moduleKey="hostes" spaceIds={SPACE_IDS.hostes} identity={identity} showToast={showToast} /></RulesGate>}
         {screen === "polivalent" && <RulesGate moduleKey="polivalent"><SpaceTab moduleKey="polivalent" spaceIds={SPACE_IDS.polivalent} identity={identity} showToast={showToast} /></RulesGate>}
         {screen === "moviment" && <RulesGate moduleKey="moviment"><SpaceTab moduleKey="moviment" spaceIds={SPACE_IDS.moviment} identity={identity} showToast={showToast} /></RulesGate>}
+        {screen === "bicicletes" && <RulesGate moduleKey="bicicletes"><SpaceTab moduleKey="bicicletes" spaceIds={SPACE_IDS.bicicletes} identity={identity} showToast={showToast} /></RulesGate>}
         {screen === "stats" && <StatsTab identity={identity} />}
         {screen === "meus" && <MyBookingsTab identity={identity} showToast={showToast} />}
       </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { X, Users, Trash2 } from "lucide-react";
-import { COLOR, MODULES, SPACE_START_MINUTES, SPACE_DURATIONS_MIN, SPACE_SUB_AREAS, formatMinutes, formatDuration, expandDateRange, ymd, rangesOverlap } from "../config";
+import { COLOR, MODULES, SPACE_DURATIONS_MIN, SPACE_SUB_AREAS, SPACE_FREEFORM_DURATION, SPACE_CLOSE_MIN, getSpaceStartMinutes, formatMinutes, formatDuration, expandDateRange, ymd, rangesOverlap } from "../config";
 import { supabase, getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking, cancelRecurrence } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
@@ -149,6 +149,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
   const [subArea, setSubArea] = useState(subAreas ? null : "tot");
   const [startMin, setStartMin] = useState(null);
   const [duration, setDuration] = useState(30);
+  const [endMin, setEndMin] = useState(null);
   const [activityNote, setActivityNote] = useState("");
   const [forOther, setForOther] = useState(false);
   const [externalName, setExternalName] = useState("");
@@ -156,6 +157,8 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
   const [repeatWeekly, setRepeatWeekly] = useState(false);
   const [repeatUntil, setRepeatUntil] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const freeform = !!SPACE_FREEFORM_DURATION[space.id];
 
   const mineBookingsToday = bookingsForDate.filter(b => b.door === identity.door);
   const othersBookingsToday = bookingsForDate.filter(b => b.door !== identity.door);
@@ -171,8 +174,20 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
     if (e > 23 * 60) return false;
     return !relevantBookings.some(b => rangesOverlap(s, e, b.start_min, b.end_min));
   }
-  const availableStarts = isHourly && subArea ? SPACE_START_MINUTES.filter(s => isMinFree(s, 30)) : [];
-  const availableDurations = isHourly && subArea && startMin !== null ? SPACE_DURATIONS_MIN.filter(d => isMinFree(startMin, d)) : [];
+  const availableStarts = isHourly && subArea ? getSpaceStartMinutes(space.id).filter(s => isMinFree(s, freeform ? 15 : 30)) : [];
+  const availableDurations = isHourly && subArea && startMin !== null && !freeform ? SPACE_DURATIONS_MIN.filter(d => isMinFree(startMin, d)) : [];
+
+  // Per a espais "sense límit de durada": es pot triar qualsevol hora de fi
+  // (cada 15 min) fins que comenci la següent reserva d'aquest dia, o fins
+  // al tancament si no n'hi ha cap més.
+  const endOptions = useMemo(() => {
+    if (!freeform || startMin === null) return [];
+    const laterStarts = relevantBookings.filter(b => b.start_min >= startMin).map(b => b.start_min);
+    const cap = laterStarts.length > 0 ? Math.min(...laterStarts) : SPACE_CLOSE_MIN;
+    const out = [];
+    for (let m = startMin + 15; m <= cap; m += 15) out.push(m);
+    return out;
+  }, [freeform, startMin, relevantBookings]);
 
   const nightlyBlocked = !isHourly && bookingsForDate.length > 0;
 
@@ -181,10 +196,10 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
     let ok;
     const note = isHourly ? (activityNote.trim() || null) : (forOther ? (externalNote.trim() || null) : null);
     if (isHourly) {
-      const endMin = startMin + duration;
+      const finalEndMin = freeform ? endMin : startMin + duration;
       const basePayload = {
         room_id: space.id, door: identity.door, nickname: identity.nickname,
-        start_min: startMin, end_min: endMin,
+        start_min: startMin, end_min: finalEndMin,
         sub_area: subAreas ? subArea : null,
         external_name: forOther ? externalName.trim() || null : null,
         external_note: note,
@@ -278,7 +293,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
               <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Hora d'inici</label>
               <div className="flex flex-wrap gap-1.5 mb-3 max-h-32 overflow-y-auto">
                 {availableStarts.map(s => (
-                  <button key={s} onClick={() => { setStartMin(s); setDuration(30); }}
+                  <button key={s} onClick={() => { setStartMin(s); setDuration(30); setEndMin(null); }}
                     className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
                     style={startMin === s ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
                     {formatMinutes(s)}
@@ -287,19 +302,40 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
               </div>
               {startMin !== null && (
                 <>
-                  <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Durada</label>
-                  <div className="flex flex-wrap gap-1.5 mb-4 max-h-28 overflow-y-auto">
-                    {SPACE_DURATIONS_MIN.map(d => {
-                      const free = availableDurations.includes(d);
-                      return (
-                        <button key={d} disabled={!free} onClick={() => setDuration(d)}
-                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30"
-                          style={duration === d ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
-                          {formatDuration(d)}
-                        </button>
-                      );
-                    })}
-                  </div>
+                  {freeform ? (
+                    <>
+                      <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Hora de fi</label>
+                      {endOptions.length === 0 ? (
+                        <p className="text-xs mb-4" style={{ color: COLOR.inkSoft }}>No hi ha temps lliure després d'aquesta hora.</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-1.5 mb-4 max-h-28 overflow-y-auto">
+                          {endOptions.map(m => (
+                            <button key={m} onClick={() => setEndMin(m)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                              style={endMin === m ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                              {formatMinutes(m)}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Durada</label>
+                      <div className="flex flex-wrap gap-1.5 mb-4 max-h-28 overflow-y-auto">
+                        {SPACE_DURATIONS_MIN.map(d => {
+                          const free = availableDurations.includes(d);
+                          return (
+                            <button key={d} disabled={!free} onClick={() => setDuration(d)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30"
+                              style={duration === d ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                              {formatDuration(d)}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
                   <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>De què es tracta? (opcional)</label>
                   <input value={activityNote} onChange={e => setActivityNote(e.target.value)} placeholder="p.ex. 'assemblea', 'ioga', 'festa d'aniversari'"
                     className="px-3 py-2 rounded-lg text-sm mb-4 w-full" style={{ border: `1px solid ${COLOR.line}` }} />
@@ -318,7 +354,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
           </>
         )}
 
-        {((isHourly && startMin !== null) || (!isHourly && !nightlyBlocked && checkOut)) && (
+        {((isHourly && startMin !== null && (!freeform || endMin !== null)) || (!isHourly && !nightlyBlocked && checkOut)) && (
           <>
             {isHourly && (
               <>

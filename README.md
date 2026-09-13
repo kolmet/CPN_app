@@ -37,7 +37,7 @@ public/sw.js                   Service worker que mostra les notificacions
    número i, sobretot, `short_minutes`/`long_minutes` de cada rentadora
    perquè coincideixin amb els temps reals (per defecte 60/90 min). Fes el
    mateix a **rooms** si vols canviar el nom o la planta de les habitacions.
-4. A **Project Settings → API**, copia **Project URL** i **anon public key**.
+4. A **Project Settings → API**, copia **Project URL** 'https://hghrkuuyieadditnruip.supabase.co/rest/v1/' i **anon public key**.'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhnaHJrdXV5aWVhZGRpdG5ydWlwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyMjgzODMsImV4cCI6MjEwNDgwNDM4M30.c_CsEws5S0UTivYhgTaHqn1wURB5lTh_HUxdXzTrQRs'
 
 ## 2. Configurar el projecte
 
@@ -157,5 +157,3 @@ mateix codi que ja teniu desplegat a Vercel.
   restant perquè algú altre la pugui reservar just després, encara que el
   torn original no hagi arribat al final teòric.
 - Pots editar plantes/zones a `src/config.js` (constant `FLOORS`).
-
-actualitzat

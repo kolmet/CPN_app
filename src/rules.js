@@ -46,16 +46,31 @@ export const SPACE_RULES = {
   // que he adaptat el mateix to i estructura dels altres tres. Revisa-ho i
   // canvia el text per l'oficial quan el tingueu.
   moviment: {
-    title: "Sala de Moviment",
+    title: "Sala de Cos i Moviment",
     items: [
       { icon: "people", text: "Respectem l'activitat que s'hi fa i el silenci si algú ho necessita." },
       { icon: "clock", text: "Respectem els horaris reservats." },
       { icon: "broom", text: "Deixem l'espai net i endreçat, com ens agradaria trobar-lo." },
       { icon: "movement", text: "Cuidem el material i el terra (parquet)." },
+      { icon: "barefoot", text: "No es pot entrar amb sabatilles." },
       { icon: "calendar", text: "Fem servir el sistema de reserves." },
       { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
       { icon: "nosmoking", text: "És un espai sense fum." },
       { icon: "nodog", text: "No hi poden accedir animals amb pèl." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
+    ],
+  },
+  // ⚠️ Provisional: cap document rebut per a aquest espai. Revisa-ho i
+  // canvia el text per l'oficial quan el tingueu.
+  bicicletes: {
+    title: "Bicicletes",
+    items: [
+      { icon: "calendar", text: "Fem servir el sistema de reserves, indicant sempre la franja horària d'ús." },
+      { icon: "clock", text: "Retornem la bicicleta puntualment en acabar la franja reservada." },
+      { icon: "battery", text: "Carreguem la bateria quan s'estigui esgotant, per deixar-la llesta per a la següent persona." },
+      { icon: "lock", text: "Guardem sempre la bicicleta amb cadenat." },
+      { icon: "bike", text: "Si alguna cosa no funciona bé, cal comunicar-ho perquè es pugui reparar." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
       { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },

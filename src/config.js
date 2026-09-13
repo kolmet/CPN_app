@@ -56,22 +56,37 @@ export const COLOR = {
 export const MODULES = {
   bugaderia: { label: "Bugaderia", icon: "washer", bg: "#DCEBFB", ink: "#2A5FA5" },
   polivalent: { label: "Sala Polivalent", icon: "kitchen", bg: "#FCE9D6", ink: "#B5651D" },
-  moviment: { label: "Sala de Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
+  moviment: { label: "Sala de Cos i Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
+  bicicletes: { label: "Bicicletes", icon: "bike", bg: "#FBF0C7", ink: "#9C7A12" },
   hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
   stats: { label: "Estadístiques", icon: "chart", bg: "#EFE3F7", ink: "#6B3FA0" },
 };
 
-// Franja horària per a les sales de reserva per hores (Polivalent/Moviment).
-// Es pot triar l'hora d'inici cada 15 min, i la durada en trams de 30 min
-// fins a un màxim de 6 hores.
-export const SPACE_OPEN_MIN = 8 * 60;   // 8:00
+// Franja horària per a les sales de reserva per hores (Polivalent/Moviment/
+// Bicicletes). Es pot triar l'hora d'inici cada 15 min. La durada per
+// defecte va en trams de 30 min fins a un màxim de 6 hores, EXCEPTE els
+// espais llistats a SPACE_FREEFORM_DURATION, on en lloc de triar una
+// durada es tria directament l'hora de fi (sense límit més enllà de
+// l'horari d'obertura).
+export const SPACE_OPEN_MIN = 8 * 60;   // 8:00 (per defecte)
 export const SPACE_CLOSE_MIN = 23 * 60; // 23:00
 export const SPACE_MAX_DURATION = 6 * 60; // 6 hores
-export const SPACE_START_MINUTES = (() => {
+
+// Algun espai obre abans que la resta (p.ex. les bicicletes, a les 6:00).
+export const SPACE_OPEN_MIN_OVERRIDES = {
+  "room-bicicletes": 6 * 60,
+};
+export function getSpaceOpenMin(spaceId) {
+  return SPACE_OPEN_MIN_OVERRIDES[spaceId] ?? SPACE_OPEN_MIN;
+}
+export function getSpaceStartMinutes(spaceId) {
+  const open = getSpaceOpenMin(spaceId);
   const out = [];
-  for (let m = SPACE_OPEN_MIN; m <= SPACE_CLOSE_MIN - 30; m += 15) out.push(m);
+  for (let m = open; m <= SPACE_CLOSE_MIN - 15; m += 15) out.push(m);
   return out;
-})();
+}
+
+export const SPACE_START_MINUTES = getSpaceStartMinutes(null);
 export const SPACE_DURATIONS_MIN = (() => {
   const out = [];
   for (let d = 30; d <= SPACE_MAX_DURATION; d += 30) out.push(d);
@@ -87,13 +102,25 @@ export function formatDuration(min) {
   return `${h}:${String(m).padStart(2, "0")}h`;
 }
 
+// Espais on, en lloc de triar una durada preestablerta, es tria
+// directament l'hora de fi (cada 15 min, sense límit de durada).
+export const SPACE_FREEFORM_DURATION = {
+  "room-bicicletes": true,
+};
+
 // La Sala Polivalent es pot reservar per parts: només la cuina, només la
 // sala, o tot l'espai (que bloqueja les dues parts alhora).
+// Les bicicletes són dos recursos independents: reservar-ne una no bloqueja
+// l'altra.
 export const SPACE_SUB_AREAS = {
   "room-polivalent": [
     { id: "cuina", name: "Cuina" },
     { id: "sala", name: "Sala" },
     { id: "tot", name: "Tot l'espai" },
+  ],
+  "room-bicicletes": [
+    { id: "bici1", name: "Bicicleta 1" },
+    { id: "bici2", name: "Bicicleta 2" },
   ],
 };
 

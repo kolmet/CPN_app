@@ -276,6 +276,66 @@ export function ClockIcon({ color = "currentColor", size = 22 }) {
 }
 
 
+export function BikeIcon({ color = "currentColor", size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <circle cx="10" cy="34" r="7" />
+        <circle cx="38" cy="34" r="7" />
+        <path d="M10 34L22 16L38 34" />
+        <path d="M17 24h13" />
+        <path d="M22 16l-4-4" />
+        <path d="M28 34L33 14" />
+        <path d="M31 14h6" />
+      </g>
+    </svg>
+  );
+}
+
+export function BarefootIcon({ color = "currentColor", size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <path d="M14 40c-4 0-6-4-6-9 0-6 2-10 2-14 0-3 2-5 4-5s4 3 4 7c0 3-1 5-1 9 0 5 1 12-3 12z" />
+        <circle cx="10" cy="10" r="1.4" />
+        <circle cx="13" cy="8" r="1.4" />
+        <circle cx="16" cy="8" r="1.4" />
+        <circle cx="19" cy="9" r="1.4" />
+        <path d="M34 40c-4 0-6-4-6-9 0-6 2-10 2-14 0-3 2-5 4-5s4 3 4 7c0 3-1 5-1 9 0 5 1 12-3 12z" />
+        <circle cx="30" cy="10" r="1.4" />
+        <circle cx="33" cy="8" r="1.4" />
+        <circle cx="36" cy="8" r="1.4" />
+        <circle cx="39" cy="9" r="1.4" />
+      </g>
+    </svg>
+  );
+}
+
+export function BatteryIcon({ color = "currentColor", size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <rect x="5" y="16" width="32" height="16" rx="3" />
+        <path d="M37 21h4v6h-4" />
+        <path d="M23 19l-6 8h5l-2 6 8-9h-5z" />
+      </g>
+    </svg>
+  );
+}
+
+export function LockIcon({ color = "currentColor", size = 22 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <rect x="10" y="21" width="28" height="19" rx="3" />
+        <path d="M16 21v-6a8 8 0 0 1 16 0v6" />
+        <circle cx="24" cy="30" r="2.2" />
+        <path d="M24 32v4" />
+      </g>
+    </svg>
+  );
+}
+
 const ICONS = {
   washer: WasherIcon,
   bed: BedIcon,
@@ -283,6 +343,7 @@ const ICONS = {
   kitchen: KitchenIcon,
   movement: MovementIcon,
   clock: ClockIcon,
+  bike: BikeIcon,
 };
 
 
