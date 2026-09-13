@@ -1,18 +1,25 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Settings as SettingsIcon, Droplets } from "lucide-react";
-import { COLOR } from "./config";
+import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
+import { COLOR, MODULES } from "./config";
 import { loadIdentity } from "./identity";
+import { SketchFilterDefs, IconTile, ClockIcon } from "./icons";
 import Onboarding from "./components/Onboarding";
 import Settings from "./components/Settings";
 import LaundryTab from "./components/LaundryTab";
-import RoomsTab from "./components/RoomsTab";
+import SpaceTab from "./components/SpaceTab";
 import MyBookingsTab from "./components/MyBookingsTab";
 import StatsTab from "./components/StatsTab";
 import InstallPrompt from "./components/InstallPrompt";
 
+const SPACE_IDS = {
+  hostes: ["room-p1", "room-p2"],
+  polivalent: ["room-polivalent"],
+  moviment: ["room-moviment"],
+};
+
 export default function App() {
   const [identity, setIdentity] = useState(() => loadIdentity());
-  const [tab, setTab] = useState("bugaderia");
+  const [screen, setScreen] = useState("home"); // home | bugaderia | hostes | polivalent | moviment | stats | meus
   const [showSettings, setShowSettings] = useState(false);
   const [toast, setToast] = useState(null);
 
@@ -22,14 +29,16 @@ export default function App() {
     return <Onboarding onComplete={(id) => setIdentity(id)} />;
   }
 
+  const currentModule = screen !== "home" && screen !== "meus" ? MODULES[screen] : null;
+
   return (
     <div className="min-h-screen" style={{ background: COLOR.bg, fontFamily: "'Inter', sans-serif", color: COLOR.ink }}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap');
         @keyframes washpulse { 0%,100% { opacity: 1; } 50% { opacity: 0.45; } }
         .washing { animation: washpulse 1.4s ease-in-out infinite; }
-        @media (prefers-reduced-motion: reduce) { .washing { animation: none; } }
       `}</style>
+      <SketchFilterDefs />
 
       {toast && (
         <div className="fixed top-3 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-full shadow-lg text-sm"
@@ -42,38 +51,45 @@ export default function App() {
 
       <div className="max-w-3xl mx-auto pb-16">
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
-          <div>
-            <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>Cooperativa</div>
-            <div className="text-2xl font-bold flex items-center gap-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
-              <Droplets size={22} style={{ color: COLOR.water }} /> Reserves
+          {screen === "home" ? (
+            <div>
+              <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>Cooperativa</div>
+              <div className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reserves</div>
             </div>
+          ) : (
+            <button onClick={() => setScreen("home")} className="flex items-center gap-2 font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: currentModule?.ink || COLOR.ink }}>
+              <ArrowLeft size={20} /> {currentModule ? currentModule.label : "Els meus torns"}
+            </button>
+          )}
+          <div className="flex items-center gap-2">
+            {screen === "home" && (
+              <button onClick={() => setScreen("meus")} className="p-2 rounded-full" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }} title="Els meus torns">
+                <ClockIcon color={COLOR.inkSoft} size={18} />
+              </button>
+            )}
+            <button onClick={() => setShowSettings(true)} className="p-2 rounded-full" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+              <SettingsIcon size={18} style={{ color: COLOR.inkSoft }} />
+            </button>
           </div>
-          <button onClick={() => setShowSettings(true)} className="p-2 rounded-full" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
-            <SettingsIcon size={18} style={{ color: COLOR.inkSoft }} />
-          </button>
         </header>
 
-        <div className="px-5 flex gap-2 mb-4 overflow-x-auto">
-          {[
-            { id: "bugaderia", label: "Bugaderia" },
-            { id: "habitacions", label: "Habitacions" },
-            { id: "meus", label: "Els meus torns" },
-            { id: "stats", label: "Estadístiques" },
-          ].map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
-              className="px-4 py-2 rounded-full text-sm font-medium shrink-0"
-              style={tab === t.id ? { background: COLOR.water, color: "#fff" } : { background: COLOR.surface, color: COLOR.inkSoft, border: `1px solid ${COLOR.line}` }}>
-              {t.label}
-            </button>
-          ))}
-        </div>
+        {screen === "home" && (
+          <>
+            <InstallPrompt />
+            <div className="px-5 grid grid-cols-3 gap-4 mt-2">
+              {Object.entries(MODULES).map(([key, mod]) => (
+                <IconTile key={key} icon={mod.icon} bg={mod.bg} ink={mod.ink} label={mod.label} onClick={() => setScreen(key)} />
+              ))}
+            </div>
+          </>
+        )}
 
-        <InstallPrompt />
-
-        {tab === "bugaderia" && <LaundryTab identity={identity} showToast={showToast} />}
-        {tab === "habitacions" && <RoomsTab identity={identity} showToast={showToast} />}
-        {tab === "meus" && <MyBookingsTab identity={identity} showToast={showToast} />}
-        {tab === "stats" && <StatsTab />}
+        {screen === "bugaderia" && <LaundryTab identity={identity} showToast={showToast} />}
+        {screen === "hostes" && <SpaceTab moduleKey="hostes" spaceIds={SPACE_IDS.hostes} identity={identity} showToast={showToast} />}
+        {screen === "polivalent" && <SpaceTab moduleKey="polivalent" spaceIds={SPACE_IDS.polivalent} identity={identity} showToast={showToast} />}
+        {screen === "moviment" && <SpaceTab moduleKey="moviment" spaceIds={SPACE_IDS.moviment} identity={identity} showToast={showToast} />}
+        {screen === "stats" && <StatsTab identity={identity} />}
+        {screen === "meus" && <MyBookingsTab identity={identity} showToast={showToast} />}
       </div>
     </div>
   );

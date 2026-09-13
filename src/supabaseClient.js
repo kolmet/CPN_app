@@ -18,7 +18,7 @@ export async function findDoorByEmail(email) {
 export async function registerDoorEmail(door, email) {
   const { data: existing } = await supabase.from("door_emails").select("door").eq("email", email).maybeSingle();
   if (existing) {
-    if (existing.door === door) return { ok: true }; // ja hi és, mateixa porta: no és un error
+    if (existing.door === door) return { ok: true };
     return { ok: false, reason: "other_door", existingDoor: existing.door };
   }
   const { error } = await supabase.from("door_emails").insert({ door, email });
@@ -67,20 +67,25 @@ export async function finishBooking(id) {
   return !error;
 }
 
-// ---------- Habitacions d'hostes ----------
-export async function getRooms() {
+// ---------- Sales / espais (hostes, polivalent, moviment) ----------
+export async function getSpaces() {
   const { data } = await supabase.from("rooms").select("*");
   return data ?? [];
 }
-export async function getRoomBookings(fromDate) {
-  const { data } = await supabase.from("room_bookings").select("*").eq("status", "confirmada").gte("check_out", fromDate);
+export async function getSpaceBookings(roomIds, fromDate) {
+  const { data } = await supabase
+    .from("room_bookings")
+    .select("*")
+    .in("room_id", roomIds)
+    .eq("status", "confirmada")
+    .gte("check_out", fromDate);
   return data ?? [];
 }
-export async function createRoomBooking(payload) {
+export async function createSpaceBooking(payload) {
   const { data, error } = await supabase.from("room_bookings").insert(payload).select().single();
   return { data, error };
 }
-export async function cancelRoomBooking(id) {
+export async function cancelSpaceBooking(id) {
   const { error } = await supabase.from("room_bookings").update({ status: "cancelada" }).eq("id", id);
   return !error;
 }

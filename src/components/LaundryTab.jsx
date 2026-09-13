@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
-import { Droplets } from "lucide-react";
-import { COLOR, FLOORS, START_HOURS, CLOSE_HOUR, buildDates, rangesOverlap } from "../config";
+import { ChevronDown, Droplets } from "lucide-react";
+import { COLOR, MODULES, FLOORS, START_HOURS, CLOSE_HOUR, buildDates, rangesOverlap } from "../config";
 import { supabase, getMachines, getBookings, createBooking, cancelBooking, finishBooking } from "../supabaseClient";
 
 const DATES = buildDates();
+const style = MODULES.bugaderia;
 
 function formatRange(startHour, durationMinutes) {
   const endTotal = startHour * 60 + durationMinutes;
@@ -13,9 +14,9 @@ function formatRange(startHour, durationMinutes) {
 
 export default function LaundryTab({ identity, showToast }) {
   const [dateIdx, setDateIdx] = useState(0);
-  const [floorIdx, setFloorIdx] = useState(() => {
+  const [openFloor, setOpenFloor] = useState(() => {
     const fi = FLOORS.findIndex(f => f.zones.some(z => z.id === identity.zone));
-    return fi >= 0 ? fi : 0;
+    return fi >= 0 ? FLOORS[fi].id : FLOORS[0].id;
   });
   const [machines, setMachines] = useState([]);
   const [bookings, setBookings] = useState([]);
@@ -58,57 +59,58 @@ export default function LaundryTab({ identity, showToast }) {
     loadBookings();
   }
 
-  const floor = FLOORS[floorIdx];
-
   return (
     <div className="px-5">
-      <div className="flex gap-2 overflow-x-auto pb-2 mb-3">
+      <div className="flex gap-2 overflow-x-auto pb-2 mb-4">
         {DATES.map((d, i) => (
           <button key={d.key} onClick={() => setDateIdx(i)}
             className="px-3 py-2 rounded-xl text-sm shrink-0"
-            style={dateIdx === i ? { background: COLOR.ink, color: "#fff" } : { background: COLOR.surface, border: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
+            style={dateIdx === i ? { background: style.ink, color: "#fff" } : { background: COLOR.surface, border: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
             {d.label}
           </button>
         ))}
       </div>
 
-      <div className="flex gap-2 mb-4">
-        {FLOORS.map((f, i) => (
-          <button key={f.id} onClick={() => setFloorIdx(i)}
-            className="px-3 py-1.5 rounded-full text-sm font-medium"
-            style={floorIdx === i ? { background: COLOR.soap, color: COLOR.ink } : { background: COLOR.surface, border: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
-            {f.name}
-          </button>
-        ))}
-      </div>
-
-      {floor.zones.map(zone => (
-        <div key={zone.id} className="mb-5">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>{zone.name}</div>
-            {identity.zone === zone.id && <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: COLOR.water, color: "#fff" }}>La teva zona</span>}
+      {FLOORS.map(floor => {
+        const isOpen = openFloor === floor.id;
+        return (
+          <div key={floor.id} className="mb-3 rounded-2xl overflow-hidden" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+            <button onClick={() => setOpenFloor(isOpen ? null : floor.id)}
+              className="w-full flex items-center justify-between px-4 py-3">
+              <span className="font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: style.ink }}>{floor.name}</span>
+              <ChevronDown size={18} style={{ color: COLOR.inkSoft, transform: isOpen ? "rotate(180deg)" : "none", transition: "transform .15s" }} />
+            </button>
+            {isOpen && (
+              <div className="px-4 pb-4">
+                {floor.zones.map(zone => (
+                  <div key={zone.id} className="mb-4 last:mb-0">
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="font-semibold text-sm">{zone.name}</div>
+                      {identity.zone === zone.id && <span className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: style.bg, color: style.ink }}>La teva zona</span>}
+                    </div>
+                    {machines.filter(m => m.zone_id === zone.id).map(machine => (
+                      <MachineCard key={machine.id}
+                        machine={machine} dateKey={dateKey} todayKey={todayKey} nowMinutes={nowMinutes}
+                        bookingsForMachine={bookings.filter(b => b.machine_id === machine.id && b.booking_date === dateKey)}
+                        identity={identity}
+                        onCreate={handleCreate} onCancel={handleCancel} onFinish={handleFinish} />
+                    ))}
+                    {machines.filter(m => m.zone_id === zone.id).length === 0 && (
+                      <div className="text-xs" style={{ color: COLOR.inkSoft }}>Sense rentadores donades d'alta.</div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
-          {machines.filter(m => m.zone_id === zone.id).map(machine => (
-            <MachineCard key={machine.id}
-              machine={machine} dateKey={dateKey} todayKey={todayKey} nowMinutes={nowMinutes}
-              bookingsForMachine={bookings.filter(b => b.machine_id === machine.id && b.booking_date === dateKey)}
-              identity={identity}
-              onCreate={handleCreate} onCancel={handleCancel} onFinish={handleFinish} />
-          ))}
-          {machines.filter(m => m.zone_id === zone.id).length === 0 && (
-            <div className="text-sm rounded-xl p-3" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
-              Encara no hi ha rentadores donades d'alta en aquesta zona.
-            </div>
-          )}
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
 
 function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachine, identity, onCreate, onCancel, onFinish }) {
   const [selHour, setSelHour] = useState(null);
-
   const activeBookings = useMemo(() => bookingsForMachine.filter(b => b.status === "reservado"), [bookingsForMachine]);
 
   function isFree(h, durationMin) {
@@ -123,24 +125,17 @@ function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachin
   const longFree = selHour !== null ? isFree(selHour, machine.long_minutes) : false;
 
   function confirm(durationMinutes) {
-    onCreate({
-      machine_id: machine.id,
-      door: identity.door,
-      email: identity.email,
-      booking_date: dateKey,
-      start_hour: selHour,
-      duration_minutes: durationMinutes,
-    });
+    onCreate({ machine_id: machine.id, door: identity.door, email: identity.email, booking_date: dateKey, start_hour: selHour, duration_minutes: durationMinutes });
     setSelHour(null);
   }
 
   const sortedBookings = [...bookingsForMachine].sort((a, b) => a.start_hour - b.start_hour);
 
   return (
-    <div className="rounded-2xl p-3 mb-3" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+    <div className="rounded-xl p-3 mb-2" style={{ background: COLOR.bg }}>
       <div className="flex items-center justify-between mb-2">
         <div className="font-semibold text-sm flex items-center gap-1">
-          <Droplets size={14} style={{ color: COLOR.water }} />
+          <Droplets size={14} style={{ color: style.ink }} />
           Rentadora núm. {machine.machine_number}{machine.brand ? ` · ${machine.brand}` : ""}
         </div>
         <span className="text-[11px]" style={{ color: COLOR.inkSoft }}>{machine.short_minutes}/{machine.long_minutes} min</span>
@@ -172,13 +167,13 @@ function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachin
 
       {selHour === null ? (
         bookableHours.length === 0 ? (
-          <div className="text-xs" style={{ color: COLOR.inkSoft }}>Sense hores lliures per avui en aquesta rentadora.</div>
+          <div className="text-xs" style={{ color: COLOR.inkSoft }}>Sense hores lliures per avui.</div>
         ) : (
           <div className="flex flex-wrap gap-1.5">
             {bookableHours.map(h => (
               <button key={h} onClick={() => setSelHour(h)}
                 className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-                style={{ background: COLOR.bg, border: `1.5px solid ${COLOR.water}`, color: COLOR.waterDark }}>
+                style={{ background: COLOR.surface, border: `1.5px solid ${style.ink}`, color: style.ink }}>
                 {h}:00
               </button>
             ))}
@@ -188,7 +183,7 @@ function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachin
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs" style={{ color: COLOR.inkSoft }}>A les {selHour}:00 —</span>
           <button onClick={() => confirm(machine.short_minutes)}
-            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: COLOR.water }}>
+            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white" style={{ background: style.ink }}>
             Curt ({machine.short_minutes} min)
           </button>
           <button disabled={!longFree} onClick={() => confirm(machine.long_minutes)}

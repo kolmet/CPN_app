@@ -15,9 +15,6 @@ export const FLOORS = [
 
 export const FLAT_ZONES = FLOORS.flatMap(f => f.zones.map(z => ({ ...z, floorId: f.id, floorName: f.name })));
 
-// La bugaderia obre de 8:00 a 22:00. Aquestes són les hores d'inici
-// possibles; la disponibilitat real de cada una depèn de la durada
-// (curta/llarga) de cada rentadora, calculada dinàmicament.
 export const OPEN_HOUR = 8;
 export const CLOSE_HOUR = 22;
 export const START_HOURS = Array.from({ length: CLOSE_HOUR - OPEN_HOUR }, (_, i) => OPEN_HOUR + i);
@@ -44,6 +41,21 @@ export const COLOR = {
   line: "#DCE6E3",
 };
 
+// Estil visual (rajola + icona) de cada apartat principal de l'app.
+export const MODULES = {
+  bugaderia: { label: "Bugaderia", icon: "washer", bg: "#DCEBFB", ink: "#2A5FA5" },
+  hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
+  polivalent: { label: "Sala Polivalent", icon: "kitchen", bg: "#FCE9D6", ink: "#B5651D" },
+  moviment: { label: "Sala de Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
+  stats: { label: "Estadístiques", icon: "chart", bg: "#EFE3F7", ink: "#6B3FA0" },
+};
+
+// Franja horària per a les sales de reserva per hores (Polivalent/Moviment).
+export const SPACE_OPEN_HOUR = 8;
+export const SPACE_CLOSE_HOUR = 23;
+export const SPACE_START_HOURS = Array.from({ length: SPACE_CLOSE_HOUR - SPACE_OPEN_HOUR }, (_, i) => SPACE_OPEN_HOUR + i);
+export const SPACE_DURATIONS = [1, 2, 3, 4]; // hores
+
 export function ymd(d) {
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");
   return `${y}-${m}-${day}`;
@@ -64,3 +76,19 @@ export function buildDates(count = 7) {
 export function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
+
+// Totes les dates (YYYY-MM-DD) compreses entre check_in (inclòs) i
+// check_out (exclòs) — útil per pintar un calendari mensual.
+export function expandDateRange(checkIn, checkOut) {
+  const dates = [];
+  let d = new Date(checkIn + "T00:00:00");
+  const end = new Date(checkOut + "T00:00:00");
+  while (d < end) {
+    dates.push(ymd(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return dates;
+}
+
+export const WEEKDAYS_CA = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
+export const MONTHS_CA = ["Gener", "Febrer", "Març", "Abril", "Maig", "Juny", "Juliol", "Agost", "Setembre", "Octubre", "Novembre", "Desembre"];
