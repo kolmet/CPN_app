@@ -10,6 +10,7 @@ import SpaceTab from "./components/SpaceTab";
 import MyBookingsTab from "./components/MyBookingsTab";
 import StatsTab from "./components/StatsTab";
 import InstallPrompt from "./components/InstallPrompt";
+import HomeCalendar from "./components/HomeCalendar";
 
 const SPACE_IDS = {
   hostes: ["room-p1", "room-p2"],
@@ -76,11 +77,12 @@ export default function App() {
         {screen === "home" && (
           <>
             <InstallPrompt />
-            <div className="px-5 grid grid-cols-3 gap-4 mt-2">
+            <div className="px-5 grid grid-cols-3 gap-4 mt-2 mb-4">
               {Object.entries(MODULES).map(([key, mod]) => (
                 <IconTile key={key} icon={mod.icon} bg={mod.bg} ink={mod.ink} label={mod.label} onClick={() => setScreen(key)} />
               ))}
             </div>
+            <HomeCalendar />
           </>
         )}
 

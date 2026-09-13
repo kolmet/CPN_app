@@ -94,5 +94,12 @@ export function expandDateRange(checkIn, checkOut) {
   return dates;
 }
 
+export const SPACE_MODULE = {
+  "room-p1": "hostes",
+  "room-p2": "hostes",
+  "room-polivalent": "polivalent",
+  "room-moviment": "moviment",
+};
+
 export const WEEKDAYS_CA = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
 export const MONTHS_CA = ["Gener", "Febrer", "Març", "Abril", "Maig", "Juny", "Juliol", "Agost", "Setembre", "Octubre", "Novembre", "Desembre"];

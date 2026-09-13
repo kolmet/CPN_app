@@ -1,13 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock3, CheckCircle2, X } from "lucide-react";
-import { COLOR, MODULES, ymd, zoneById, expandDateRange } from "../config";
+import { COLOR, MODULES, SPACE_MODULE, ymd, zoneById, expandDateRange } from "../config";
 import { supabase, getMachines, getBookings, cancelBooking, finishBooking, getSpaces, getSpaceBookings, cancelSpaceBooking } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
 function todayStr() { return ymd(new Date()); }
 function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
-
-const SPACE_MODULE = { "room-p1": "hostes", "room-p2": "hostes", "room-polivalent": "polivalent", "room-moviment": "moviment" };
 
 export default function MyBookingsTab({ identity, showToast }) {
   const [machines, setMachines] = useState([]);
