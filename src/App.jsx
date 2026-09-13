@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
 import { COLOR, MODULES, APP_NAME } from "./config";
 import { loadIdentity, saveIdentity } from "./identity";
-import { SketchFilterDefs, IconTile, ClockIcon } from "./icons";
+import { SketchFilterDefs, IconTile, ClockIcon, LogoIcon } from "./icons";
 import Onboarding from "./components/Onboarding";
 import Settings from "./components/Settings";
 import LaundryTab from "./components/LaundryTab";
@@ -11,6 +11,7 @@ import MyBookingsTab from "./components/MyBookingsTab";
 import StatsTab from "./components/StatsTab";
 import InstallPrompt from "./components/InstallPrompt";
 import HomeCalendar from "./components/HomeCalendar";
+import RulesGate from "./components/RulesGate";
 
 const SPACE_IDS = {
   hostes: ["room-p1", "room-p2"],
@@ -53,12 +54,16 @@ export default function App() {
       <div className="max-w-3xl mx-auto pb-16">
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
           {screen === "home" ? (
-            <div>
-              <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>{APP_NAME}</div>
-              <div className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reserves</div>
+            <div className="flex items-center gap-2">
+              <LogoIcon size={30} color={COLOR.water} />
+              <div>
+                <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>{APP_NAME}</div>
+                <div className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reserves</div>
+              </div>
             </div>
           ) : (
             <button onClick={() => setScreen("home")} className="flex items-center gap-2 font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: currentModule?.ink || COLOR.ink }}>
+              <LogoIcon size={20} color={currentModule?.ink || COLOR.ink} />
               <ArrowLeft size={20} /> {currentModule ? currentModule.label : "Els meus torns"}
             </button>
           )}
@@ -86,10 +91,10 @@ export default function App() {
           </>
         )}
 
-        {screen === "bugaderia" && <LaundryTab identity={identity} showToast={showToast} />}
-        {screen === "hostes" && <SpaceTab moduleKey="hostes" spaceIds={SPACE_IDS.hostes} identity={identity} showToast={showToast} />}
-        {screen === "polivalent" && <SpaceTab moduleKey="polivalent" spaceIds={SPACE_IDS.polivalent} identity={identity} showToast={showToast} />}
-        {screen === "moviment" && <SpaceTab moduleKey="moviment" spaceIds={SPACE_IDS.moviment} identity={identity} showToast={showToast} />}
+        {screen === "bugaderia" && <RulesGate moduleKey="bugaderia"><LaundryTab identity={identity} showToast={showToast} /></RulesGate>}
+        {screen === "hostes" && <RulesGate moduleKey="hostes"><SpaceTab moduleKey="hostes" spaceIds={SPACE_IDS.hostes} identity={identity} showToast={showToast} /></RulesGate>}
+        {screen === "polivalent" && <RulesGate moduleKey="polivalent"><SpaceTab moduleKey="polivalent" spaceIds={SPACE_IDS.polivalent} identity={identity} showToast={showToast} /></RulesGate>}
+        {screen === "moviment" && <RulesGate moduleKey="moviment"><SpaceTab moduleKey="moviment" spaceIds={SPACE_IDS.moviment} identity={identity} showToast={showToast} /></RulesGate>}
         {screen === "stats" && <StatsTab identity={identity} />}
         {screen === "meus" && <MyBookingsTab identity={identity} showToast={showToast} />}
       </div>

@@ -99,6 +99,26 @@ export function MovementIcon({ color = "currentColor", size = 28 }) {
   );
 }
 
+export function LogoIcon({ color = "currentColor", size = 28 }) {
+  // Casa amb finestra rodona (amb creu) al capdamunt i dos arbres als costats,
+  // inspirada en el logo de Cal Paler Nou.
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <path d="M6 22 L24 7 L42 22" />
+        <path d="M10 22v16h28V22" />
+        <circle cx="24" cy="16" r="3.4" />
+        <path d="M24 12.6v6.8M20.6 16h6.8" />
+        <rect x="20" y="29" width="8" height="9" rx="1" />
+        <circle cx="9" cy="27" r="3" />
+        <path d="M9 30v5" />
+        <circle cx="39" cy="27" r="3" />
+        <path d="M39 30v5" />
+      </g>
+    </svg>
+  );
+}
+
 export function ClockIcon({ color = "currentColor", size = 22 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>

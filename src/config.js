@@ -1,5 +1,10 @@
 export const APP_NAME = "Cal Paler Nou";
 
+// Encara no actiu: quan es posi a true, apareixerà el checkbox "no tornis
+// a mostrar-ho" a les normes d'ús i es respectarà per no tornar-les a
+// ensenyar. De moment les normes es mostren sempre.
+export const ENABLE_DONT_SHOW_AGAIN = false;
+
 export const FLOORS = [
   { id: "pb", name: "Planta Baixa", zones: [
     { id: "pb-a", name: "Escala A" },
