@@ -1,30 +1,32 @@
 import React, { useState, useEffect } from "react";
-import { X, Mail, Bell, LogOut } from "lucide-react";
+import { X, Users, Bell, LogOut } from "lucide-react";
 import { COLOR } from "../config";
-import { registerDoorEmail, getEmailsForDoor } from "../supabaseClient";
+import { registerDoorEmail, getResidentsForDoor } from "../supabaseClient";
 import { enablePushNotifications, getPushPermissionState, pushSupported } from "../push";
 import { clearIdentity } from "../identity";
 
 export default function Settings({ identity, onClose, onForget }) {
-  const [emails, setEmails] = useState([]);
+  const [residents, setResidents] = useState([]);
   const [newEmail, setNewEmail] = useState("");
+  const [newNickname, setNewNickname] = useState("");
   const [msg, setMsg] = useState("");
   const [pushState, setPushState] = useState("checking");
   const [activating, setActivating] = useState(false);
 
   useEffect(() => {
-    getEmailsForDoor(identity.door).then(setEmails);
+    getResidentsForDoor(identity.door).then(setResidents);
     getPushPermissionState().then(setPushState);
   }, [identity.door]);
 
-  async function addEmail() {
-    const clean = newEmail.trim().toLowerCase();
-    if (!clean) return;
-    const result = await registerDoorEmail(identity.door, clean);
+  async function addResident() {
+    const cleanEmail = newEmail.trim().toLowerCase();
+    const cleanNickname = newNickname.trim();
+    if (!cleanEmail || !cleanNickname) return;
+    const result = await registerDoorEmail(identity.door, cleanEmail, cleanNickname);
     if (result.ok) {
-      setEmails(await getEmailsForDoor(identity.door));
-      setNewEmail("");
-      setMsg("Correu afegit a la porta " + identity.door + ".");
+      setResidents(await getResidentsForDoor(identity.door));
+      setNewEmail(""); setNewNickname("");
+      setMsg(`${cleanNickname} afegit·da a la porta ${identity.door}.`);
     } else if (result.reason === "other_door") {
       setMsg(`Aquest correu ja està registrat amb la porta ${result.existingDoor}.`);
     } else {
@@ -55,19 +57,25 @@ export default function Settings({ identity, onClose, onForget }) {
         </div>
 
         <div className="mb-5 p-3 rounded-xl text-sm" style={{ background: COLOR.bg }}>
-          Ets a la porta <b>{identity.door}</b>, connectat com <b>{identity.email}</b>.
+          Ets a la porta <b>{identity.door}</b>, com <b>{identity.nickname}</b>.
         </div>
 
         <div className="mb-5">
-          <div className="text-sm font-semibold mb-2 flex items-center gap-1"><Mail size={15} /> Correus d'aquesta porta</div>
+          <div className="text-sm font-semibold mb-2 flex items-center gap-1"><Users size={15} /> Persones d'aquesta porta</div>
           <ul className="text-sm mb-2 space-y-1" style={{ color: COLOR.inkSoft }}>
-            {emails.map(e => <li key={e}>• {e}</li>)}
+            {residents.map(r => <li key={r.email_masked}>• <b style={{ color: COLOR.ink }}>{r.nickname}</b> ({r.email_masked})</li>)}
           </ul>
-          <div className="flex gap-2">
-            <input value={newEmail} onChange={e => setNewEmail(e.target.value)} type="email"
-              placeholder="afegir-companys@exemple.cat" className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+          <p className="text-xs mb-2" style={{ color: COLOR.inkSoft }}>Afegeix una altra persona de la mateixa porta:</p>
+          <div className="flex flex-col gap-2">
+            <input value={newNickname} onChange={e => setNewNickname(e.target.value)}
+              placeholder="Nickname (p.ex. Jordi)" className="px-3 py-2 rounded-lg text-sm outline-none"
               style={{ border: `1px solid ${COLOR.line}` }} />
-            <button onClick={addEmail} className="px-3 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: COLOR.water }}>Afegeix</button>
+            <div className="flex gap-2">
+              <input value={newEmail} onChange={e => setNewEmail(e.target.value)} type="email"
+                placeholder="correu@exemple.cat" className="flex-1 px-3 py-2 rounded-lg text-sm outline-none"
+                style={{ border: `1px solid ${COLOR.line}` }} />
+              <button onClick={addResident} className="px-3 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: COLOR.water }}>Afegeix</button>
+            </div>
           </div>
         </div>
 

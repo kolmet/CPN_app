@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock3, CheckCircle2, X } from "lucide-react";
-import { COLOR, MODULES, SPACE_MODULE, ymd, zoneById, expandDateRange } from "../config";
+import { COLOR, MODULES, SPACE_MODULE, ymd, zoneById, expandDateRange, formatMinutes } from "../config";
 import { supabase, getMachines, getBookings, cancelBooking, finishBooking, getSpaces, getSpaceBookings, cancelSpaceBooking } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
@@ -45,7 +45,7 @@ export default function MyBookingsTab({ identity, showToast }) {
   async function handleCancelSpace(id) { await cancelSpaceBooking(id); showToast("Reserva cancel·lada"); load(); }
 
   const laundrySorted = [...laundry].sort((a, b) => (a.booking_date + a.start_hour).localeCompare(b.booking_date + b.start_hour));
-  const spaceSorted = [...spaceBookings].sort((a, b) => a.check_in.localeCompare(b.check_in));
+  const spaceSorted = [...spaceBookings].sort((a, b) => a.check_in.localeCompare(b.check_in) || (a.start_min ?? 0) - (b.start_min ?? 0));
 
   const calendarDates = useMemo(() => {
     const map = new Map();
@@ -119,14 +119,15 @@ export default function MyBookingsTab({ identity, showToast }) {
         const space = spaces.find(s => s.id === b.room_id);
         const moduleKey = SPACE_MODULE[b.room_id] || "hostes";
         const style = MODULES[moduleKey];
-        const isHourly = b.start_hour != null;
+        const isHourly = b.start_min != null;
         return (
           <div key={b.id} className="rounded-2xl p-4 flex items-center justify-between" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
             <div>
               <div className="text-[10px] font-semibold uppercase mb-0.5" style={{ color: style.ink }}>{style.label}</div>
               <div className="font-semibold text-sm">{space?.name ?? "Espai"}</div>
               <div className="text-sm" style={{ color: COLOR.inkSoft }}>
-                {isHourly ? `${b.check_in} · ${b.start_hour}:00–${b.end_hour}:00` : `${b.check_in} → ${b.check_out}`}
+                {isHourly ? `${b.check_in} · ${formatMinutes(b.start_min)}–${formatMinutes(b.end_min)}` : `${b.check_in} → ${b.check_out}`}
+                {b.sub_area && b.sub_area !== "tot" ? ` · ${b.sub_area === "cuina" ? "Cuina" : "Sala"}` : ""}
               </div>
               {b.external_name && <div className="text-xs mt-0.5" style={{ color: COLOR.inkSoft }}>Per a: {b.external_name}{b.external_note ? ` — ${b.external_note}` : ""}</div>}
             </div>

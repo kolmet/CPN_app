@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
 import { COLOR, MODULES, APP_NAME } from "./config";
-import { loadIdentity } from "./identity";
+import { loadIdentity, saveIdentity } from "./identity";
 import { SketchFilterDefs, IconTile, ClockIcon } from "./icons";
 import Onboarding from "./components/Onboarding";
 import Settings from "./components/Settings";
@@ -27,7 +27,7 @@ export default function App() {
   const showToast = useCallback((msg) => { setToast(msg); setTimeout(() => setToast(null), 2500); }, []);
 
   if (!identity) {
-    return <Onboarding onComplete={(id) => setIdentity(id)} />;
+    return <Onboarding onComplete={(id) => { saveIdentity(id); setIdentity(id); }} />;
   }
 
   const currentModule = screen !== "home" && screen !== "meus" ? MODULES[screen] : null;

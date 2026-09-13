@@ -57,10 +57,40 @@ export const MODULES = {
 };
 
 // Franja horària per a les sales de reserva per hores (Polivalent/Moviment).
-export const SPACE_OPEN_HOUR = 8;
-export const SPACE_CLOSE_HOUR = 23;
-export const SPACE_START_HOURS = Array.from({ length: SPACE_CLOSE_HOUR - SPACE_OPEN_HOUR }, (_, i) => SPACE_OPEN_HOUR + i);
-export const SPACE_DURATIONS = [1, 2, 3, 4]; // hores
+// Es pot triar l'hora d'inici cada 15 min, i la durada en trams de 30 min
+// fins a un màxim de 6 hores.
+export const SPACE_OPEN_MIN = 8 * 60;   // 8:00
+export const SPACE_CLOSE_MIN = 23 * 60; // 23:00
+export const SPACE_MAX_DURATION = 6 * 60; // 6 hores
+export const SPACE_START_MINUTES = (() => {
+  const out = [];
+  for (let m = SPACE_OPEN_MIN; m <= SPACE_CLOSE_MIN - 30; m += 15) out.push(m);
+  return out;
+})();
+export const SPACE_DURATIONS_MIN = (() => {
+  const out = [];
+  for (let d = 30; d <= SPACE_MAX_DURATION; d += 30) out.push(d);
+  return out;
+})();
+export function formatMinutes(totalMin) {
+  const h = Math.floor(totalMin / 60), m = totalMin % 60;
+  return `${h}:${String(m).padStart(2, "0")}`;
+}
+export function formatDuration(min) {
+  const h = Math.floor(min / 60), m = min % 60;
+  if (m === 0) return `${h}h`;
+  return `${h}:${String(m).padStart(2, "0")}h`;
+}
+
+// La Sala Polivalent es pot reservar per parts: només la cuina, només la
+// sala, o tot l'espai (que bloqueja les dues parts alhora).
+export const SPACE_SUB_AREAS = {
+  "room-polivalent": [
+    { id: "cuina", name: "Cuina" },
+    { id: "sala", name: "Sala" },
+    { id: "tot", name: "Tot l'espai" },
+  ],
+};
 
 export function ymd(d) {
   const y = d.getFullYear(), m = String(d.getMonth() + 1).padStart(2, "0"), day = String(d.getDate()).padStart(2, "0");

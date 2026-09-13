@@ -125,7 +125,7 @@ function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachin
   const longFree = selHour !== null ? isFree(selHour, machine.long_minutes) : false;
 
   function confirm(durationMinutes) {
-    onCreate({ machine_id: machine.id, door: identity.door, email: identity.email, booking_date: dateKey, start_hour: selHour, duration_minutes: durationMinutes });
+    onCreate({ machine_id: machine.id, door: identity.door, nickname: identity.nickname, booking_date: dateKey, start_hour: selHour, duration_minutes: durationMinutes });
     setSelHour(null);
   }
 
@@ -156,7 +156,7 @@ function MachineCard({ machine, dateKey, todayKey, nowMinutes, bookingsForMachin
             const canFinish = isMine && b.status === "reservado" && (isNow || isPast);
             return (
               <div key={b.id} className="rounded-lg px-2 py-1 text-[11px] flex items-center gap-2" style={{ background: bg, color: fg }}>
-                <span>{formatRange(b.start_hour, b.duration_minutes)} · {isMine ? "tu" : `porta ${b.door}`} · {label}</span>
+                <span>{formatRange(b.start_hour, b.duration_minutes)} · {isMine ? "tu" : (b.nickname || `porta ${b.door}`)} · {label}</span>
                 {canFinish && <button onClick={() => onFinish(b.id)} className="underline">llest</button>}
                 {canCancel && <button onClick={() => onCancel(b.id)} className="underline">anul·la</button>}
               </div>

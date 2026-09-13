@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
-import { COLOR, MODULES, FLAT_ZONES, shortZoneLabel, ymd, MONTHS_CA } from "../config";
-import { getMachines, getBookings } from "../supabaseClient";
+import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { COLOR, MODULES, SPACE_MODULE, FLAT_ZONES, shortZoneLabel, ymd, MONTHS_CA } from "../config";
+import { getMachines, getBookings, getSpaces, getSpaceBookings } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
 function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
@@ -11,6 +11,7 @@ export default function StatsTab({ identity }) {
   const [machines, setMachines] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [yearBookings, setYearBookings] = useState([]);
+  const [spaceBookings, setSpaceBookings] = useState([]);
 
   useEffect(() => {
     getMachines().then(setMachines);
@@ -18,6 +19,12 @@ export default function StatsTab({ identity }) {
     const jan1 = `${new Date().getFullYear()}-01-01`;
     const dec31 = `${new Date().getFullYear()}-12-31`;
     getBookings(jan1, dec31).then(setYearBookings);
+    getSpaces().then(async spaces => {
+      const ids = spaces.map(s => s.id).filter(id => SPACE_MODULE[id]);
+      if (ids.length === 0) return;
+      const bk = await getSpaceBookings(ids, addDays(-60));
+      setSpaceBookings(bk);
+    });
   }, []);
 
   const stats = useMemo(() => {
@@ -48,6 +55,19 @@ export default function StatsTab({ identity }) {
     return MONTHS_CA.map((name, i) => ({ name: name.slice(0, 3), total: counts[i] }));
   }, [yearBookings, identity.door]);
 
+  const spaceUsage = useMemo(() => {
+    const counts = { hostes: 0, polivalent: 0, moviment: 0 };
+    spaceBookings.forEach(b => {
+      const moduleKey = SPACE_MODULE[b.room_id];
+      if (moduleKey && counts[moduleKey] !== undefined) counts[moduleKey]++;
+    });
+    return [
+      { name: "Hostes", total: counts.hostes, fill: MODULES.hostes.ink },
+      { name: "Polivalent", total: counts.polivalent, fill: MODULES.polivalent.ink },
+      { name: "Moviment", total: counts.moviment, fill: MODULES.moviment.ink },
+    ];
+  }, [spaceBookings]);
+
   return (
     <div className="px-5 space-y-4">
       <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
@@ -70,12 +90,12 @@ export default function StatsTab({ identity }) {
       </div>
 
       <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
-        <div className="text-sm" style={{ color: COLOR.inkSoft }}>Torns de tota la cooperativa (últims 60 dies)</div>
+        <div className="text-sm" style={{ color: COLOR.inkSoft }}>Torns de bugaderia (últims 60 dies)</div>
         <div className="text-3xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif", color: COLOR.waterDark }}>{stats.total}</div>
       </div>
 
       <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
-        <div className="font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ús per zona (tothom)</div>
+        <div className="font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ús de bugaderia per zona (tothom)</div>
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={stats.zoneData}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLOR.line} />
@@ -83,6 +103,22 @@ export default function StatsTab({ identity }) {
             <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
             <Tooltip />
             <Bar dataKey="total" fill={COLOR.water} radius={[6, 6, 0, 0]} />
+          </BarChart>
+        </ResponsiveContainer>
+      </div>
+
+      <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+        <div className="font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ús dels espais comuns (últims 60 dies)</div>
+        <p className="text-xs mb-2" style={{ color: COLOR.inkSoft }}>Nombre de reserves de Hostes, Sala Polivalent i Sala de Moviment.</p>
+        <ResponsiveContainer width="100%" height={180}>
+          <BarChart data={spaceUsage}>
+            <CartesianGrid strokeDasharray="3 3" stroke={COLOR.line} />
+            <XAxis dataKey="name" tick={{ fontSize: 11 }} />
+            <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+            <Tooltip />
+            <Bar dataKey="total" radius={[6, 6, 0, 0]}>
+              {spaceUsage.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+            </Bar>
           </BarChart>
         </ResponsiveContainer>
       </div>

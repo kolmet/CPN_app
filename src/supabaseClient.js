@@ -10,23 +10,33 @@ if (!url || !anonKey) {
 
 export const supabase = createClient(url, anonKey);
 
+import { hashEmail, maskEmail } from "./crypto";
+
 // ---------- Identitat: porta <-> correus ----------
+// El correu real MAI es guarda a Supabase: només el seu hash (per
+// comprovar duplicats) i una versió emmascarada (per mostrar-la).
 export async function findDoorByEmail(email) {
-  const { data } = await supabase.from("door_emails").select("door").eq("email", email).maybeSingle();
+  const hash = await hashEmail(email);
+  const { data } = await supabase.from("door_emails").select("door").eq("email_hash", hash).maybeSingle();
   return data?.door ?? null;
 }
-export async function registerDoorEmail(door, email) {
-  const { data: existing } = await supabase.from("door_emails").select("door").eq("email", email).maybeSingle();
+export async function registerDoorEmail(door, email, nickname) {
+  const hash = await hashEmail(email);
+  const { data: existing } = await supabase.from("door_emails").select("door").eq("email_hash", hash).maybeSingle();
   if (existing) {
     if (existing.door === door) return { ok: true };
     return { ok: false, reason: "other_door", existingDoor: existing.door };
   }
-  const { error } = await supabase.from("door_emails").insert({ door, email });
+  const { error } = await supabase.from("door_emails").insert({ door, email_hash: hash, email_masked: maskEmail(email), nickname });
   return { ok: !error, reason: error ? "insert_error" : null };
 }
+export async function getResidentsForDoor(door) {
+  const { data } = await supabase.from("door_emails").select("email_masked, nickname").eq("door", door);
+  return data ?? [];
+}
 export async function getEmailsForDoor(door) {
-  const { data } = await supabase.from("door_emails").select("email").eq("door", door);
-  return (data ?? []).map(r => r.email);
+  const { data } = await supabase.from("door_emails").select("email_masked").eq("door", door);
+  return (data ?? []).map(r => r.email_masked);
 }
 export async function getDoorZone(door) {
   const { data } = await supabase.from("door_zones").select("zone_id").eq("door", door).maybeSingle();
@@ -87,5 +97,9 @@ export async function createSpaceBooking(payload) {
 }
 export async function cancelSpaceBooking(id) {
   const { error } = await supabase.from("room_bookings").update({ status: "cancelada" }).eq("id", id);
+  return !error;
+}
+export async function cancelRecurrence(recurrenceId, door) {
+  const { error } = await supabase.from("room_bookings").update({ status: "cancelada" }).eq("recurrence_id", recurrenceId).eq("door", door);
   return !error;
 }

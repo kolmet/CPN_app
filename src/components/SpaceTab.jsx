@@ -1,10 +1,18 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { X, Users, Trash2 } from "lucide-react";
-import { COLOR, MODULES, SPACE_START_HOURS, SPACE_DURATIONS, expandDateRange, ymd, rangesOverlap } from "../config";
-import { supabase, getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking } from "../supabaseClient";
+import { COLOR, MODULES, SPACE_START_MINUTES, SPACE_DURATIONS_MIN, SPACE_SUB_AREAS, formatMinutes, formatDuration, expandDateRange, ymd, rangesOverlap } from "../config";
+import { supabase, getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking, cancelRecurrence } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
 function todayStr() { return ymd(new Date()); }
+
+// Dues reserves d'un mateix dia xoquen si se superposen en el temps I,
+// quan hi ha sub-àrees (Cuina/Sala/Tot), afecten la mateixa part de l'espai.
+function subAreasClash(a, b) {
+  if (!a || !b) return true; // sense sub-àrees: qualsevol reserva ocupa tot l'espai
+  if (a === "tot" || b === "tot") return true;
+  return a === b;
+}
 
 export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
   const style = MODULES[moduleKey];
@@ -33,9 +41,25 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
     load();
     return true;
   }
+  async function handleCreateMany(payloads) {
+    let ok = 0, fail = 0;
+    for (const p of payloads) {
+      const { error } = await createSpaceBooking(p);
+      if (error) fail++; else ok++;
+    }
+    if (ok > 0) showToast(`${ok} reserva${ok > 1 ? "s" : ""} creada${ok > 1 ? "es" : ""}${fail > 0 ? `, ${fail} van xocar amb una altra reserva` : ""} ✔`);
+    else showToast("No s'ha pogut crear cap reserva (totes xocaven amb una altra).");
+    load();
+    return ok > 0;
+  }
   async function handleCancel(id) {
     const ok = await cancelSpaceBooking(id);
     showToast(ok ? "Reserva cancel·lada" : "No s'ha pogut cancel·lar.");
+    load();
+  }
+  async function handleCancelRecurrence(recurrenceId) {
+    const ok = await cancelRecurrence(recurrenceId, identity.door);
+    showToast(ok ? "Totes les repeticions cancel·lades" : "No s'ha pogut cancel·lar.");
     load();
   }
 
@@ -44,7 +68,7 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
       {spaces.map(space => (
         <SpaceCard key={space.id} space={space} style={style} identity={identity}
           bookings={bookings.filter(b => b.room_id === space.id)}
-          onCreate={handleCreate} onCancel={handleCancel} />
+          onCreate={handleCreate} onCreateMany={handleCreateMany} onCancel={handleCancel} onCancelRecurrence={handleCancelRecurrence} />
       ))}
       {spaces.length === 0 && (
         <div className="text-sm rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
@@ -55,24 +79,27 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
   );
 }
 
-function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
+function SpaceCard({ space, style, identity, bookings, onCreate, onCreateMany, onCancel, onCancelRecurrence }) {
   const isHourly = space.booking_mode === "hourly";
+  const subAreas = SPACE_SUB_AREAS[space.id] || null;
   const [modalDate, setModalDate] = useState(null);
 
   const occupiedDates = useMemo(() => {
     const map = new Map();
     bookings.forEach(b => {
-      const who = b.external_name ? `per a ${b.external_name}` : `Porta ${b.door}`;
-      const label = b.external_note ? `${who} — ${b.external_note}` : who;
+      const who = b.external_name ? `per a ${b.external_name}` : (b.nickname || `Porta ${b.door}`);
+      const areaTag = b.sub_area && b.sub_area !== "tot" ? ` (${subAreas?.find(a => a.id === b.sub_area)?.name || b.sub_area})` : "";
+      const time = isHourly ? ` ${formatMinutes(b.start_min)}-${formatMinutes(b.end_min)}` : "";
+      const label = `${who}${areaTag}${time}`;
       expandDateRange(b.check_in, b.check_out).forEach(d => {
         const prev = map.get(d);
         map.set(d, { color: style.ink, label: prev ? `${prev.label}, ${label}` : label });
       });
     });
     return map;
-  }, [bookings, style.ink, isHourly]);
+  }, [bookings, style.ink, isHourly, subAreas]);
 
-  const sorted = [...bookings].sort((a, b) => a.check_in.localeCompare(b.check_in) || (a.start_hour ?? 0) - (b.start_hour ?? 0));
+  const sorted = [...bookings].sort((a, b) => a.check_in.localeCompare(b.check_in) || (a.start_min ?? 0) - (b.start_min ?? 0));
 
   return (
     <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
@@ -86,13 +113,19 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
           <div className="text-[11px] font-semibold uppercase" style={{ color: COLOR.inkSoft }}>Properes reserves</div>
           {sorted.map(b => {
             const isMine = b.door === identity.door;
-            const timePart = isHourly ? ` · ${b.start_hour}:00–${b.end_hour}:00` : "";
-            const who = b.external_name ? `per a ${b.external_name}` : (isMine ? "tu" : `porta ${b.door}`);
+            const timePart = isHourly ? ` · ${formatMinutes(b.start_min)}–${formatMinutes(b.end_min)}` : "";
+            const areaPart = b.sub_area && b.sub_area !== "tot" ? ` · ${subAreas?.find(a => a.id === b.sub_area)?.name || b.sub_area}` : "";
+            const who = b.external_name ? `per a ${b.external_name}` : (isMine ? "tu" : (b.nickname || `porta ${b.door}`));
             const notePart = b.external_note ? ` — ${b.external_note}` : "";
             return (
               <div key={b.id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: COLOR.bg }}>
-                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart} · {who}{notePart}</span>
-                {isMine && <button onClick={() => onCancel(b.id)} className="underline" style={{ color: COLOR.danger }}>anul·la</button>}
+                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart}{areaPart} · {who}{notePart}{b.recurrence_id ? " · repetitiva" : ""}</span>
+                {isMine && (
+                  <span className="flex items-center gap-2 shrink-0">
+                    <button onClick={() => onCancel(b.id)} className="underline" style={{ color: COLOR.danger }}>anul·la</button>
+                    {b.recurrence_id && <button onClick={() => onCancelRecurrence(b.recurrence_id)} className="underline" style={{ color: COLOR.danger }}>anul·la totes</button>}
+                  </span>
+                )}
               </div>
             );
           })}
@@ -101,9 +134,9 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
 
       {modalDate && (
         <BookingModal
-          space={space} style={style} isHourly={isHourly} date={modalDate} identity={identity}
+          space={space} style={style} isHourly={isHourly} subAreas={subAreas} date={modalDate} identity={identity}
           bookingsForDate={bookings.filter(b => isHourly ? b.check_in === modalDate : (b.check_in <= modalDate && b.check_out > modalDate))}
-          onCreate={onCreate} onCancel={onCancel}
+          onCreate={onCreate} onCreateMany={onCreateMany} onCancel={onCancel}
           onClose={() => setModalDate(null)}
         />
       )}
@@ -111,47 +144,76 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
   );
 }
 
-function BookingModal({ space, style, isHourly, date, identity, bookingsForDate, onCreate, onCancel, onClose }) {
+function BookingModal({ space, style, isHourly, subAreas, date, identity, bookingsForDate, onCreate, onCreateMany, onCancel, onClose }) {
   const [checkOut, setCheckOut] = useState("");
-  const [startHour, setStartHour] = useState(null);
-  const [duration, setDuration] = useState(1);
+  const [subArea, setSubArea] = useState(subAreas ? null : "tot");
+  const [startMin, setStartMin] = useState(null);
+  const [duration, setDuration] = useState(30);
   const [activityNote, setActivityNote] = useState("");
   const [forOther, setForOther] = useState(false);
   const [externalName, setExternalName] = useState("");
   const [externalNote, setExternalNote] = useState("");
+  const [repeatWeekly, setRepeatWeekly] = useState(false);
+  const [repeatUntil, setRepeatUntil] = useState("");
   const [saving, setSaving] = useState(false);
 
   const mineBookingsToday = bookingsForDate.filter(b => b.door === identity.door);
   const othersBookingsToday = bookingsForDate.filter(b => b.door !== identity.door);
 
-  function isHourFree(h, dur) {
-    const s = h * 60, e = s + dur * 60;
-    if (e > 24 * 60) return false;
-    return !bookingsForDate.some(b => rangesOverlap(s, e, b.start_hour * 60, b.end_hour * 60));
+  // Reserves que xoquen amb la sub-àrea que s'està mirant ara mateix
+  const relevantBookings = useMemo(
+    () => bookingsForDate.filter(b => subAreasClash(b.sub_area, subArea)),
+    [bookingsForDate, subArea]
+  );
+
+  function isMinFree(s, dur) {
+    const e = s + dur;
+    if (e > 23 * 60) return false;
+    return !relevantBookings.some(b => rangesOverlap(s, e, b.start_min, b.end_min));
   }
-  const availableStartHours = isHourly ? SPACE_START_HOURS.filter(h => isHourFree(h, 1)) : [];
-  const availableDurations = isHourly && startHour !== null ? SPACE_DURATIONS.filter(d => isHourFree(startHour, d)) : [];
+  const availableStarts = isHourly && subArea ? SPACE_START_MINUTES.filter(s => isMinFree(s, 30)) : [];
+  const availableDurations = isHourly && subArea && startMin !== null ? SPACE_DURATIONS_MIN.filter(d => isMinFree(startMin, d)) : [];
 
   const nightlyBlocked = !isHourly && bookingsForDate.length > 0;
 
   async function submit() {
     setSaving(true);
     let ok;
-    // Per a sales per hores, "de què es tracta" el pot omplir tothom;
-    // el nom extern només s'omple si es reserva per a una altra persona/entitat.
     const note = isHourly ? (activityNote.trim() || null) : (forOther ? (externalNote.trim() || null) : null);
     if (isHourly) {
-      const endHour = startHour + duration;
-      ok = await onCreate({
-        room_id: space.id, door: identity.door, email: identity.email,
-        check_in: date, check_out: ymd(new Date(new Date(date + "T00:00:00").getTime() + 86400000)),
-        start_hour: startHour, end_hour: endHour,
+      const endMin = startMin + duration;
+      const basePayload = {
+        room_id: space.id, door: identity.door, nickname: identity.nickname,
+        start_min: startMin, end_min: endMin,
+        sub_area: subAreas ? subArea : null,
         external_name: forOther ? externalName.trim() || null : null,
         external_note: note,
-      });
+      };
+      if (repeatWeekly && repeatUntil) {
+        const recurrenceId = crypto.randomUUID();
+        const dates = [];
+        let d = new Date(date + "T00:00:00");
+        const until = new Date(repeatUntil + "T00:00:00");
+        while (d <= until && dates.length < 52) {
+          dates.push(ymd(d));
+          d.setDate(d.getDate() + 7);
+        }
+        const payloads = dates.map(dt => ({
+          ...basePayload,
+          check_in: dt,
+          check_out: ymd(new Date(new Date(dt + "T00:00:00").getTime() + 86400000)),
+          recurrence_id: recurrenceId,
+        }));
+        ok = await onCreateMany(payloads);
+      } else {
+        ok = await onCreate({
+          ...basePayload,
+          check_in: date, check_out: ymd(new Date(new Date(date + "T00:00:00").getTime() + 86400000)),
+        });
+      }
     } else {
       ok = await onCreate({
-        room_id: space.id, door: identity.door, email: identity.email,
+        room_id: space.id, door: identity.door, nickname: identity.nickname,
         check_in: date, check_out: checkOut,
         external_name: forOther ? externalName.trim() || null : null,
         external_note: note,
@@ -174,7 +236,9 @@ function BookingModal({ space, style, isHourly, date, identity, bookingsForDate,
           <div className="mb-4 space-y-1.5">
             {othersBookingsToday.map(b => (
               <div key={b.id} className="text-xs rounded-lg px-2.5 py-1.5" style={{ background: COLOR.bg }}>
-                Ocupat{isHourly ? ` (${b.start_hour}:00–${b.end_hour}:00)` : ""}: {b.external_name ? `per a ${b.external_name}` : `porta ${b.door}`}{b.external_note ? ` — ${b.external_note}` : ""}
+                Ocupat{isHourly ? ` (${formatMinutes(b.start_min)}–${formatMinutes(b.end_min)})` : ""}
+                {b.sub_area && b.sub_area !== "tot" ? ` · ${subAreas?.find(a => a.id === b.sub_area)?.name}` : ""}
+                : {b.external_name ? `per a ${b.external_name}` : (b.nickname || `porta ${b.door}`)}{b.external_note ? ` — ${b.external_note}` : ""}
               </div>
             ))}
           </div>
@@ -184,39 +248,54 @@ function BookingModal({ space, style, isHourly, date, identity, bookingsForDate,
           <div className="mb-4 space-y-1.5">
             {mineBookingsToday.map(b => (
               <div key={b.id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: style.bg, color: style.ink }}>
-                <span>La teva reserva{isHourly ? ` (${b.start_hour}:00–${b.end_hour}:00)` : ` (fins ${b.check_out})`}{b.external_name ? ` — per a ${b.external_name}` : ""}</span>
+                <span>La teva reserva{isHourly ? ` (${formatMinutes(b.start_min)}–${formatMinutes(b.end_min)})` : ` (fins ${b.check_out})`}{b.sub_area && b.sub_area !== "tot" ? ` · ${subAreas?.find(a => a.id === b.sub_area)?.name}` : ""}{b.external_name ? ` — per a ${b.external_name}` : ""}</span>
                 <button onClick={() => { onCancel(b.id); onClose(); }} className="flex items-center gap-1 shrink-0" style={{ color: COLOR.danger }}><Trash2 size={13} /></button>
               </div>
             ))}
           </div>
         )}
 
+        {isHourly && subAreas && (
+          <>
+            <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Quin espai?</label>
+            <div className="flex flex-wrap gap-1.5 mb-3">
+              {subAreas.map(a => (
+                <button key={a.id} onClick={() => { setSubArea(a.id); setStartMin(null); }}
+                  className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                  style={subArea === a.id ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                  {a.name}
+                </button>
+              ))}
+            </div>
+          </>
+        )}
+
         {isHourly ? (
-          availableStartHours.length === 0 ? (
-            <p className="text-sm" style={{ color: COLOR.inkSoft }}>No queden hores lliures aquest dia.</p>
+          !subArea ? null : availableStarts.length === 0 ? (
+            <p className="text-sm" style={{ color: COLOR.inkSoft }}>No queden hores lliures aquest dia per a aquesta opció.</p>
           ) : (
             <>
               <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Hora d'inici</label>
-              <div className="flex flex-wrap gap-1.5 mb-3">
-                {availableStartHours.map(h => (
-                  <button key={h} onClick={() => { setStartHour(h); setDuration(1); }}
+              <div className="flex flex-wrap gap-1.5 mb-3 max-h-32 overflow-y-auto">
+                {availableStarts.map(s => (
+                  <button key={s} onClick={() => { setStartMin(s); setDuration(30); }}
                     className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
-                    style={startHour === h ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
-                    {h}:00
+                    style={startMin === s ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                    {formatMinutes(s)}
                   </button>
                 ))}
               </div>
-              {startHour !== null && (
+              {startMin !== null && (
                 <>
                   <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Durada</label>
-                  <div className="flex flex-wrap gap-1.5 mb-4">
-                    {SPACE_DURATIONS.map(d => {
+                  <div className="flex flex-wrap gap-1.5 mb-4 max-h-28 overflow-y-auto">
+                    {SPACE_DURATIONS_MIN.map(d => {
                       const free = availableDurations.includes(d);
                       return (
                         <button key={d} disabled={!free} onClick={() => setDuration(d)}
                           className="px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30"
                           style={duration === d ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
-                          {d}h
+                          {formatDuration(d)}
                         </button>
                       );
                     })}
@@ -239,8 +318,23 @@ function BookingModal({ space, style, isHourly, date, identity, bookingsForDate,
           </>
         )}
 
-        {((isHourly && startHour !== null) || (!isHourly && !nightlyBlocked && checkOut)) && (
+        {((isHourly && startMin !== null) || (!isHourly && !nightlyBlocked && checkOut)) && (
           <>
+            {isHourly && (
+              <>
+                <label className="flex items-center gap-2 text-xs mb-2" style={{ color: COLOR.inkSoft }}>
+                  <input type="checkbox" checked={repeatWeekly} onChange={e => setRepeatWeekly(e.target.checked)} />
+                  Repeteix cada setmana (mateix dia i hora)
+                </label>
+                {repeatWeekly && (
+                  <div className="mb-3">
+                    <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Fins a quina data</label>
+                    <input type="date" min={date} value={repeatUntil} onChange={e => setRepeatUntil(e.target.value)}
+                      className="px-3 py-2 rounded-lg text-sm w-full" style={{ border: `1px solid ${COLOR.line}` }} />
+                  </div>
+                )}
+              </>
+            )}
             <label className="flex items-center gap-2 text-xs mb-2" style={{ color: COLOR.inkSoft }}>
               <input type="checkbox" checked={forOther} onChange={e => setForOther(e.target.checked)} />
               <Users size={14} /> Reservar per a una altra persona o entitat
@@ -255,9 +349,9 @@ function BookingModal({ space, style, isHourly, date, identity, bookingsForDate,
                 )}
               </div>
             )}
-            <button onClick={submit} disabled={saving}
+            <button onClick={submit} disabled={saving || (repeatWeekly && !repeatUntil)}
               className="w-full px-4 py-2.5 rounded-full text-sm font-semibold text-white disabled:opacity-50" style={{ background: style.ink }}>
-              {saving ? "Reservant…" : "Confirma la reserva"}
+              {saving ? "Reservant…" : repeatWeekly ? "Confirma totes les reserves" : "Confirma la reserva"}
             </button>
           </>
         )}
