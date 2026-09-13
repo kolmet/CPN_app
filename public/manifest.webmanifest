@@ -1,7 +1,7 @@
 {
-  "name": "Cooperativa · Reserves",
+  "name": "Cal Paler Nou · Reserves",
   "short_name": "Reserves",
-  "description": "Bugaderia i habitacions d'hostes de la cooperativa",
+  "description": "Bugaderia i sales de la cooperativa Cal Paler Nou",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

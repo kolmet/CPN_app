@@ -4,7 +4,7 @@ import { COLOR, WEEKDAYS_CA, MONTHS_CA, ymd } from "../config";
 
 // occupiedDates: Map<'YYYY-MM-DD', { color?: string, label?: string }>
 // o simplement un Set de dates si totes es pinten igual.
-export default function MonthCalendar({ occupiedDates, accentColor = COLOR.water, initialDate }) {
+export default function MonthCalendar({ occupiedDates, accentColor = COLOR.water, initialDate, onDayClick }) {
   const [cursor, setCursor] = useState(() => {
     const d = initialDate ? new Date(initialDate + "T00:00:00") : new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -41,15 +41,17 @@ export default function MonthCalendar({ occupiedDates, accentColor = COLOR.water
           const occ = isOccupied(dateKey);
           const isToday = dateKey === today;
           return (
-            <div key={i} className="aspect-square flex items-center justify-center rounded-lg text-xs"
+            <button key={i} onClick={() => onDayClick && onDayClick(dateKey)}
+              className="aspect-square flex items-center justify-center rounded-lg text-xs"
               style={{
                 background: occ ? (occ.color || accentColor) : COLOR.bg,
                 color: occ ? "#fff" : COLOR.ink,
                 border: isToday ? `2px solid ${COLOR.ink}` : "2px solid transparent",
+                cursor: onDayClick ? "pointer" : "default",
               }}
               title={occ?.label || ""}>
               {d}
-            </div>
+            </button>
           );
         })}
       </div>

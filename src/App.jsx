@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Settings as SettingsIcon, ArrowLeft } from "lucide-react";
-import { COLOR, MODULES } from "./config";
+import { COLOR, MODULES, APP_NAME } from "./config";
 import { loadIdentity } from "./identity";
 import { SketchFilterDefs, IconTile, ClockIcon } from "./icons";
 import Onboarding from "./components/Onboarding";
@@ -53,7 +53,7 @@ export default function App() {
         <header className="px-5 pt-6 pb-4 flex items-center justify-between">
           {screen === "home" ? (
             <div>
-              <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>Cooperativa</div>
+              <div className="text-xs tracking-widest uppercase" style={{ color: COLOR.inkSoft }}>{APP_NAME}</div>
               <div className="text-2xl font-bold" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Reserves</div>
             </div>
           ) : (

@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock3, CheckCircle2, X } from "lucide-react";
-import { COLOR, MODULES, ymd, zoneById } from "../config";
+import { COLOR, MODULES, ymd, zoneById, expandDateRange } from "../config";
 import { supabase, getMachines, getBookings, cancelBooking, finishBooking, getSpaces, getSpaceBookings, cancelSpaceBooking } from "../supabaseClient";
+import MonthCalendar from "./MonthCalendar";
 
 function todayStr() { return ymd(new Date()); }
 function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
@@ -48,6 +49,20 @@ export default function MyBookingsTab({ identity, showToast }) {
   const laundrySorted = [...laundry].sort((a, b) => (a.booking_date + a.start_hour).localeCompare(b.booking_date + b.start_hour));
   const spaceSorted = [...spaceBookings].sort((a, b) => a.check_in.localeCompare(b.check_in));
 
+  const calendarDates = useMemo(() => {
+    const map = new Map();
+    laundry.forEach(b => map.set(b.booking_date, { color: MODULES.bugaderia.ink, label: "Bugaderia" }));
+    spaceBookings.forEach(b => {
+      const moduleKey = SPACE_MODULE[b.room_id] || "hostes";
+      const modStyle = MODULES[moduleKey];
+      expandDateRange(b.check_in, b.check_out).forEach(d => {
+        const prev = map.get(d);
+        map.set(d, { color: modStyle.ink, label: prev ? `${prev.label}, ${modStyle.label}` : modStyle.label });
+      });
+    });
+    return map;
+  }, [laundry, spaceBookings]);
+
   if (laundrySorted.length === 0 && spaceSorted.length === 0) {
     return (
       <div className="px-5">
@@ -60,6 +75,9 @@ export default function MyBookingsTab({ identity, showToast }) {
 
   return (
     <div className="px-5 space-y-3">
+      <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+        <MonthCalendar occupiedDates={calendarDates} />
+      </div>
       {laundrySorted.map(b => {
         const machine = machines.find(m => m.id === b.machine_id);
         const start = b.start_hour * 60, end = start + b.duration_minutes;

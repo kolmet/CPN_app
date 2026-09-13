@@ -10,6 +10,7 @@ export default function Settings({ identity, onClose, onForget }) {
   const [newEmail, setNewEmail] = useState("");
   const [msg, setMsg] = useState("");
   const [pushState, setPushState] = useState("checking");
+  const [activating, setActivating] = useState(false);
 
   useEffect(() => {
     getEmailsForDoor(identity.door).then(setEmails);
@@ -24,18 +25,24 @@ export default function Settings({ identity, onClose, onForget }) {
       setEmails(await getEmailsForDoor(identity.door));
       setNewEmail("");
       setMsg("Correu afegit a la porta " + identity.door + ".");
+    } else if (result.reason === "other_door") {
+      setMsg(`Aquest correu ja està registrat amb la porta ${result.existingDoor}.`);
     } else {
-      setMsg("Aquest correu ja està registrat amb una altra porta.");
+      setMsg("Hi ha hagut un problema desant les dades. Torna-ho a provar.");
     }
   }
 
   async function activatePush() {
+    setActivating(true);
+    setMsg("");
     try {
       await enablePushNotifications(identity.email);
       setPushState("granted");
-      setMsg("Notificacions activades en aquest dispositiu.");
+      setMsg("Notificacions activades en aquest dispositiu ✔");
     } catch (e) {
-      setMsg(e.message || "No s'han pogut activar les notificacions.");
+      setMsg(e?.message || "No s'han pogut activar les notificacions.");
+    } finally {
+      setActivating(false);
     }
   }
 
@@ -67,12 +74,14 @@ export default function Settings({ identity, onClose, onForget }) {
         <div className="mb-5">
           <div className="text-sm font-semibold mb-2 flex items-center gap-1"><Bell size={15} /> Notificacions al mòbil</div>
           {!pushSupported() ? (
-            <p className="text-sm" style={{ color: COLOR.inkSoft }}>Aquest navegador no admet notificacions push.</p>
+            <p className="text-sm" style={{ color: COLOR.inkSoft }}>Aquest navegador no admet notificacions push. Si ets a l'iPhone, primer cal instal·lar l'app a la pantalla d'inici (Compartir → Afegeix a l'inici).</p>
           ) : pushState === "granted" ? (
             <p className="text-sm" style={{ color: COLOR.success }}>Notificacions activades en aquest dispositiu ✔</p>
+          ) : pushState === "denied" ? (
+            <p className="text-sm" style={{ color: COLOR.danger }}>Has denegat el permís de notificacions al navegador. Cal activar-lo manualment als ajustos del navegador/mòbil per a aquest lloc.</p>
           ) : (
-            <button onClick={activatePush} className="px-3 py-2 rounded-lg text-sm font-semibold text-white" style={{ background: COLOR.soap, color: COLOR.ink }}>
-              Activa avisos quan acabi la bugada
+            <button onClick={activatePush} disabled={activating} className="px-3 py-2 rounded-lg text-sm font-semibold disabled:opacity-50" style={{ background: COLOR.soap, color: COLOR.ink }}>
+              {activating ? "Activant…" : "Activa avisos quan acabi la bugada"}
             </button>
           )}
         </div>

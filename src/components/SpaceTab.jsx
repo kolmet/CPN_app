@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { X, Users } from "lucide-react";
-import { COLOR, MODULES, SPACE_START_HOURS, SPACE_DURATIONS, expandDateRange, ymd } from "../config";
+import { X, Users, Trash2 } from "lucide-react";
+import { COLOR, MODULES, SPACE_START_HOURS, SPACE_DURATIONS, expandDateRange, ymd, rangesOverlap } from "../config";
 import { supabase, getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
 
@@ -28,9 +28,10 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
 
   async function handleCreate(payload) {
     const { error } = await createSpaceBooking(payload);
-    if (error) showToast("No s'ha pogut reservar (potser xoca amb una altra reserva).");
-    else showToast("Reserva feta ✔");
+    if (error) { showToast("No s'ha pogut reservar (potser xoca amb una altra reserva)."); return false; }
+    showToast("Reserva feta ✔");
     load();
+    return true;
   }
   async function handleCancel(id) {
     const ok = await cancelSpaceBooking(id);
@@ -56,57 +57,20 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
 
 function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
   const isHourly = space.booking_mode === "hourly";
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [date, setDate] = useState(todayStr());
-  const [startHour, setStartHour] = useState(SPACE_START_HOURS[0]);
-  const [duration, setDuration] = useState(1);
-  const [forOther, setForOther] = useState(false);
-  const [externalName, setExternalName] = useState("");
-  const [externalNote, setExternalNote] = useState("");
+  const [modalDate, setModalDate] = useState(null);
 
   const occupiedDates = useMemo(() => {
     const map = new Map();
     bookings.forEach(b => {
-      const label = b.external_name ? `${b.external_name}${isHourly ? ` (${b.start_hour}:00-${b.end_hour}:00)` : ""}` : `Porta ${b.door}`;
-      expandDateRange(b.check_in, b.check_out).forEach(d => map.set(d, { color: style.ink, label }));
+      const who = b.external_name ? `per a ${b.external_name}` : `Porta ${b.door}`;
+      const label = b.external_note ? `${who} — ${b.external_note}` : who;
+      expandDateRange(b.check_in, b.check_out).forEach(d => {
+        const prev = map.get(d);
+        map.set(d, { color: style.ink, label: prev ? `${prev.label}, ${label}` : label });
+      });
     });
     return map;
   }, [bookings, style.ink, isHourly]);
-
-  function resetForm() {
-    setCheckIn(""); setCheckOut(""); setDate(todayStr()); setStartHour(SPACE_START_HOURS[0]); setDuration(1);
-    setForOther(false); setExternalName(""); setExternalNote("");
-  }
-
-  function submitNightly() {
-    if (!checkIn || !checkOut || checkOut <= checkIn) return;
-    const overlap = bookings.some(b => b.check_in < checkOut && b.check_out > checkIn);
-    if (overlap) return alert("Ja hi ha una reserva que xoca amb aquestes dates.");
-    onCreate({
-      room_id: space.id, door: identity.door, email: identity.email,
-      check_in: checkIn, check_out: checkOut,
-      external_name: forOther ? externalName.trim() || null : null,
-      external_note: forOther ? externalNote.trim() || null : null,
-    });
-    resetForm();
-  }
-
-  function submitHourly() {
-    const endHour = startHour + Number(duration);
-    if (endHour > 24) return alert("L'horari no pot passar de mitjanit.");
-    const sameDay = bookings.filter(b => b.check_in === date);
-    const overlap = sameDay.some(b => startHour < b.end_hour && b.start_hour < endHour);
-    if (overlap) return alert("Ja hi ha una reserva que xoca amb aquest horari.");
-    const nextDay = ymd(new Date(new Date(date + "T00:00:00").getTime() + 86400000));
-    onCreate({
-      room_id: space.id, door: identity.door, email: identity.email,
-      check_in: date, check_out: nextDay, start_hour: startHour, end_hour: endHour,
-      external_name: forOther ? externalName.trim() || null : null,
-      external_note: forOther ? externalNote.trim() || null : null,
-    });
-    resetForm();
-  }
 
   const sorted = [...bookings].sort((a, b) => a.check_in.localeCompare(b.check_in) || (a.start_hour ?? 0) - (b.start_hour ?? 0));
 
@@ -114,19 +78,20 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
     <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
       <div className="font-bold mb-3" style={{ fontFamily: "'Space Grotesk', sans-serif", color: style.ink }}>{space.name}</div>
 
-      <div className="mb-4">
-        <MonthCalendar occupiedDates={occupiedDates} accentColor={style.ink} initialDate={todayStr()} />
-      </div>
+      <MonthCalendar occupiedDates={occupiedDates} accentColor={style.ink} initialDate={todayStr()} onDayClick={setModalDate} />
+      <p className="text-[11px] mt-2 text-center" style={{ color: COLOR.inkSoft }}>Toca un dia per reservar-lo o veure'n el detall</p>
 
       {sorted.length > 0 && (
-        <div className="space-y-1.5 mb-4">
+        <div className="space-y-1.5 mt-4 pt-3" style={{ borderTop: `1px solid ${COLOR.line}` }}>
+          <div className="text-[11px] font-semibold uppercase" style={{ color: COLOR.inkSoft }}>Properes reserves</div>
           {sorted.map(b => {
             const isMine = b.door === identity.door;
             const timePart = isHourly ? ` · ${b.start_hour}:00–${b.end_hour}:00` : "";
             const who = b.external_name ? `per a ${b.external_name}` : (isMine ? "tu" : `porta ${b.door}`);
+            const notePart = b.external_note ? ` — ${b.external_note}` : "";
             return (
               <div key={b.id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: COLOR.bg }}>
-                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart} · {who}</span>
+                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart} · {who}{notePart}</span>
                 {isMine && <button onClick={() => onCancel(b.id)} className="underline" style={{ color: COLOR.danger }}>anul·la</button>}
               </div>
             );
@@ -134,61 +99,168 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCancel }) {
         </div>
       )}
 
-      <div className="pt-3" style={{ borderTop: `1px solid ${COLOR.line}` }}>
+      {modalDate && (
+        <BookingModal
+          space={space} style={style} isHourly={isHourly} date={modalDate} identity={identity}
+          bookingsForDate={bookings.filter(b => isHourly ? b.check_in === modalDate : (b.check_in <= modalDate && b.check_out > modalDate))}
+          onCreate={onCreate} onCancel={onCancel}
+          onClose={() => setModalDate(null)}
+        />
+      )}
+    </div>
+  );
+}
+
+function BookingModal({ space, style, isHourly, date, identity, bookingsForDate, onCreate, onCancel, onClose }) {
+  const [checkOut, setCheckOut] = useState("");
+  const [startHour, setStartHour] = useState(null);
+  const [duration, setDuration] = useState(1);
+  const [activityNote, setActivityNote] = useState("");
+  const [forOther, setForOther] = useState(false);
+  const [externalName, setExternalName] = useState("");
+  const [externalNote, setExternalNote] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const mineBookingsToday = bookingsForDate.filter(b => b.door === identity.door);
+  const othersBookingsToday = bookingsForDate.filter(b => b.door !== identity.door);
+
+  function isHourFree(h, dur) {
+    const s = h * 60, e = s + dur * 60;
+    if (e > 24 * 60) return false;
+    return !bookingsForDate.some(b => rangesOverlap(s, e, b.start_hour * 60, b.end_hour * 60));
+  }
+  const availableStartHours = isHourly ? SPACE_START_HOURS.filter(h => isHourFree(h, 1)) : [];
+  const availableDurations = isHourly && startHour !== null ? SPACE_DURATIONS.filter(d => isHourFree(startHour, d)) : [];
+
+  const nightlyBlocked = !isHourly && bookingsForDate.length > 0;
+
+  async function submit() {
+    setSaving(true);
+    let ok;
+    // Per a sales per hores, "de què es tracta" el pot omplir tothom;
+    // el nom extern només s'omple si es reserva per a una altra persona/entitat.
+    const note = isHourly ? (activityNote.trim() || null) : (forOther ? (externalNote.trim() || null) : null);
+    if (isHourly) {
+      const endHour = startHour + duration;
+      ok = await onCreate({
+        room_id: space.id, door: identity.door, email: identity.email,
+        check_in: date, check_out: ymd(new Date(new Date(date + "T00:00:00").getTime() + 86400000)),
+        start_hour: startHour, end_hour: endHour,
+        external_name: forOther ? externalName.trim() || null : null,
+        external_note: note,
+      });
+    } else {
+      ok = await onCreate({
+        room_id: space.id, door: identity.door, email: identity.email,
+        check_in: date, check_out: checkOut,
+        external_name: forOther ? externalName.trim() || null : null,
+        external_note: note,
+      });
+    }
+    setSaving(false);
+    if (ok) onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center" style={{ background: "rgba(21,36,38,0.45)" }} onClick={onClose}>
+      <div className="w-full sm:max-w-md rounded-t-2xl sm:rounded-2xl p-6 max-h-[85vh] overflow-y-auto" style={{ background: COLOR.surface }} onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-1">
+          <span className="font-bold text-lg" style={{ fontFamily: "'Space Grotesk', sans-serif", color: style.ink }}>{date}</span>
+          <button onClick={onClose}><X size={20} style={{ color: COLOR.inkSoft }} /></button>
+        </div>
+        <p className="text-xs mb-4" style={{ color: COLOR.inkSoft }}>{space.name}</p>
+
+        {othersBookingsToday.length > 0 && (
+          <div className="mb-4 space-y-1.5">
+            {othersBookingsToday.map(b => (
+              <div key={b.id} className="text-xs rounded-lg px-2.5 py-1.5" style={{ background: COLOR.bg }}>
+                Ocupat{isHourly ? ` (${b.start_hour}:00–${b.end_hour}:00)` : ""}: {b.external_name ? `per a ${b.external_name}` : `porta ${b.door}`}{b.external_note ? ` — ${b.external_note}` : ""}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {mineBookingsToday.length > 0 && (
+          <div className="mb-4 space-y-1.5">
+            {mineBookingsToday.map(b => (
+              <div key={b.id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: style.bg, color: style.ink }}>
+                <span>La teva reserva{isHourly ? ` (${b.start_hour}:00–${b.end_hour}:00)` : ` (fins ${b.check_out})`}{b.external_name ? ` — per a ${b.external_name}` : ""}</span>
+                <button onClick={() => { onCancel(b.id); onClose(); }} className="flex items-center gap-1 shrink-0" style={{ color: COLOR.danger }}><Trash2 size={13} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+
         {isHourly ? (
-          <div className="flex flex-wrap items-end gap-2 mb-2">
-            <div>
-              <label className="block text-[11px] mb-0.5" style={{ color: COLOR.inkSoft }}>Data</label>
-              <input type="date" min={todayStr()} value={date} onChange={e => setDate(e.target.value)}
-                className="px-2 py-1.5 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }} />
-            </div>
-            <div>
-              <label className="block text-[11px] mb-0.5" style={{ color: COLOR.inkSoft }}>Hora d'inici</label>
-              <select value={startHour} onChange={e => setStartHour(Number(e.target.value))} className="px-2 py-1.5 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }}>
-                {SPACE_START_HOURS.map(h => <option key={h} value={h}>{h}:00</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="block text-[11px] mb-0.5" style={{ color: COLOR.inkSoft }}>Durada</label>
-              <select value={duration} onChange={e => setDuration(Number(e.target.value))} className="px-2 py-1.5 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }}>
-                {SPACE_DURATIONS.map(h => <option key={h} value={h}>{h}h</option>)}
-              </select>
-            </div>
-          </div>
+          availableStartHours.length === 0 ? (
+            <p className="text-sm" style={{ color: COLOR.inkSoft }}>No queden hores lliures aquest dia.</p>
+          ) : (
+            <>
+              <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Hora d'inici</label>
+              <div className="flex flex-wrap gap-1.5 mb-3">
+                {availableStartHours.map(h => (
+                  <button key={h} onClick={() => { setStartHour(h); setDuration(1); }}
+                    className="px-2.5 py-1.5 rounded-lg text-xs font-semibold"
+                    style={startHour === h ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                    {h}:00
+                  </button>
+                ))}
+              </div>
+              {startHour !== null && (
+                <>
+                  <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Durada</label>
+                  <div className="flex flex-wrap gap-1.5 mb-4">
+                    {SPACE_DURATIONS.map(d => {
+                      const free = availableDurations.includes(d);
+                      return (
+                        <button key={d} disabled={!free} onClick={() => setDuration(d)}
+                          className="px-2.5 py-1.5 rounded-lg text-xs font-semibold disabled:opacity-30"
+                          style={duration === d ? { background: style.ink, color: "#fff" } : { background: COLOR.bg, border: `1.5px solid ${style.ink}`, color: style.ink }}>
+                          {d}h
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>De què es tracta? (opcional)</label>
+                  <input value={activityNote} onChange={e => setActivityNote(e.target.value)} placeholder="p.ex. 'assemblea', 'ioga', 'festa d'aniversari'"
+                    className="px-3 py-2 rounded-lg text-sm mb-4 w-full" style={{ border: `1px solid ${COLOR.line}` }} />
+                </>
+              )}
+            </>
+          )
+        ) : nightlyBlocked ? (
+          <p className="text-sm mb-3" style={{ color: COLOR.inkSoft }}>Aquest dia ja està ocupat. Tria un altre dia d'entrada.</p>
         ) : (
-          <div className="flex flex-wrap items-end gap-2 mb-2">
-            <div>
-              <label className="block text-[11px] mb-0.5" style={{ color: COLOR.inkSoft }}>Entrada</label>
-              <input type="date" min={todayStr()} value={checkIn} onChange={e => setCheckIn(e.target.value)}
-                className="px-2 py-1.5 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }} />
-            </div>
-            <div>
-              <label className="block text-[11px] mb-0.5" style={{ color: COLOR.inkSoft }}>Sortida</label>
-              <input type="date" min={checkIn || todayStr()} value={checkOut} onChange={e => setCheckOut(e.target.value)}
-                className="px-2 py-1.5 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }} />
-            </div>
-          </div>
+          <>
+            <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Data de sortida</label>
+            <input type="date" min={ymd(new Date(new Date(date + "T00:00:00").getTime() + 86400000))} value={checkOut}
+              onChange={e => setCheckOut(e.target.value)}
+              className="px-3 py-2 rounded-lg text-sm mb-4 w-full" style={{ border: `1px solid ${COLOR.line}` }} />
+          </>
         )}
 
-        <label className="flex items-center gap-2 text-xs mb-2" style={{ color: COLOR.inkSoft }}>
-          <input type="checkbox" checked={forOther} onChange={e => setForOther(e.target.checked)} />
-          <Users size={14} /> Reservar per a una altra persona o entitat
-        </label>
-
-        {forOther && (
-          <div className="flex flex-wrap gap-2 mb-2">
-            <input value={externalName} onChange={e => setExternalName(e.target.value)} placeholder="Nom de la persona o entitat"
-              className="px-2 py-1.5 rounded-lg text-sm flex-1 min-w-[160px]" style={{ border: `1px solid ${COLOR.line}` }} />
-            <input value={externalNote} onChange={e => setExternalNote(e.target.value)} placeholder="Breu descripció (p.ex. 'aniversari')"
-              className="px-2 py-1.5 rounded-lg text-sm flex-1 min-w-[160px]" style={{ border: `1px solid ${COLOR.line}` }} />
-          </div>
+        {((isHourly && startHour !== null) || (!isHourly && !nightlyBlocked && checkOut)) && (
+          <>
+            <label className="flex items-center gap-2 text-xs mb-2" style={{ color: COLOR.inkSoft }}>
+              <input type="checkbox" checked={forOther} onChange={e => setForOther(e.target.checked)} />
+              <Users size={14} /> Reservar per a una altra persona o entitat
+            </label>
+            {forOther && (
+              <div className="flex flex-col gap-2 mb-3">
+                <input value={externalName} onChange={e => setExternalName(e.target.value)} placeholder="Nom de la persona o entitat"
+                  className="px-3 py-2 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }} />
+                {!isHourly && (
+                  <input value={externalNote} onChange={e => setExternalNote(e.target.value)} placeholder="Breu descripció (p.ex. 'aniversari')"
+                    className="px-3 py-2 rounded-lg text-sm" style={{ border: `1px solid ${COLOR.line}` }} />
+                )}
+              </div>
+            )}
+            <button onClick={submit} disabled={saving}
+              className="w-full px-4 py-2.5 rounded-full text-sm font-semibold text-white disabled:opacity-50" style={{ background: style.ink }}>
+              {saving ? "Reservant…" : "Confirma la reserva"}
+            </button>
+          </>
         )}
-
-        <button onClick={isHourly ? submitHourly : submitNightly}
-          disabled={isHourly ? false : (!checkIn || !checkOut || checkOut <= checkIn)}
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white disabled:opacity-40" style={{ background: style.ink }}>
-          Reserva
-        </button>
       </div>
     </div>
   );

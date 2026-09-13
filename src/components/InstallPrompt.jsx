@@ -12,7 +12,7 @@ function isIOS() {
 export default function InstallPrompt() {
   const [deferredPrompt, setDeferredPrompt] = useState(null);
   const [dismissed, setDismissed] = useState(() => sessionStorage.getItem("install_dismissed") === "1");
-  const [showIosHelp, setShowIosHelp] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
   useEffect(() => {
     function onBeforeInstall(e) {
@@ -24,7 +24,6 @@ export default function InstallPrompt() {
   }, []);
 
   if (isStandalone() || dismissed) return null;
-  if (!deferredPrompt && !isIOS()) return null;
 
   function dismiss() {
     setDismissed(true);
@@ -36,26 +35,34 @@ export default function InstallPrompt() {
       deferredPrompt.prompt();
       await deferredPrompt.userChoice;
       setDeferredPrompt(null);
-    } else if (isIOS()) {
-      setShowIosHelp(true);
+    } else {
+      setExpanded(true);
     }
   }
 
   return (
     <div className="px-5 mb-3">
-      <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
-        <Download size={18} style={{ color: COLOR.water }} />
-        <div className="flex-1 text-xs" style={{ color: COLOR.inkSoft }}>
-          {showIosHelp
-            ? <>A Safari: toca <b>Compartir</b> → <b>Afegeix a l'inici</b>. Així rebràs els avisos com una app.</>
-            : "Instal·la-la a la pantalla d'inici per obrir-la com una app i rebre avisos."}
-        </div>
-        {!showIosHelp && (
+      <div className="rounded-xl p-3" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+        <div className="flex items-center gap-3">
+          <Download size={18} style={{ color: COLOR.water }} />
+          <div className="flex-1 text-xs" style={{ color: COLOR.inkSoft }}>
+            Instal·la l'app a la pantalla d'inici per obrir-la com una aplicació i rebre avisos.
+          </div>
           <button onClick={install} className="px-3 py-1.5 rounded-full text-xs font-semibold text-white shrink-0" style={{ background: COLOR.water }}>
             Instal·la
           </button>
+          <button onClick={dismiss} className="shrink-0"><X size={16} style={{ color: COLOR.inkSoft }} /></button>
+        </div>
+        {expanded && !deferredPrompt && (
+          <div className="mt-2 pt-2 text-xs" style={{ borderTop: `1px solid ${COLOR.line}`, color: COLOR.inkSoft }}>
+            {isIOS() ? (
+              <>A Safari: toca <b>Compartir</b> (el quadrat amb la fletxa) → <b>Afegeix a l'inici</b>.</>
+            ) : (
+              <>Al navegador: busca la icona d'instal·lar a la barra d'adreces (una pantalla amb una fletxa), o obre el menú
+                {" "}<b>⋮</b> i tria <b>"Instal·la l'aplicació"</b> / <b>"Afegeix a la pantalla d'inici"</b>.</>
+            )}
+          </div>
         )}
-        <button onClick={dismiss} className="shrink-0"><X size={16} style={{ color: COLOR.inkSoft }} /></button>
       </div>
     </div>
   );

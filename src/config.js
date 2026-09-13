@@ -1,18 +1,20 @@
+export const APP_NAME = "Cal Paler Nou";
+
 export const FLOORS = [
   { id: "pb", name: "Planta Baixa", zones: [
-    { id: "pb-a", name: "Zona A" },
-    { id: "pb-b", name: "Zona B" },
+    { id: "pb-a", name: "Escala A" },
+    { id: "pb-b", name: "Escala B" },
   ]},
   { id: "p1", name: "Planta 1", zones: [
-    { id: "p1-a", name: "Zona A" },
-    { id: "p1-b", name: "Zona B" },
+    { id: "p1-a", name: "Escala A" },
+    { id: "p1-b", name: "Escala B" },
   ]},
   { id: "p2", name: "Planta 2", zones: [
-    { id: "p2-a", name: "Zona A" },
-    { id: "p2-b", name: "Zona B" },
+    { id: "p2-a", name: "Escala A" },
+    { id: "p2-b", name: "Escala B" },
   ]},
   { id: "terrat", name: "Terrat", zones: [
-    { id: "terrat-comuna", name: "Zona comuna" },
+    { id: "terrat-b", name: "Escala B" },
   ]},
 ];
 
@@ -45,11 +47,12 @@ export const COLOR = {
 };
 
 // Estil visual (rajola + icona) de cada apartat principal de l'app.
+// L'ordre d'aquest objecte és l'ordre en què surten les rajoles a l'inici.
 export const MODULES = {
   bugaderia: { label: "Bugaderia", icon: "washer", bg: "#DCEBFB", ink: "#2A5FA5" },
-  hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
   polivalent: { label: "Sala Polivalent", icon: "kitchen", bg: "#FCE9D6", ink: "#B5651D" },
   moviment: { label: "Sala de Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
+  hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
   stats: { label: "Estadístiques", icon: "chart", bg: "#EFE3F7", ink: "#6B3FA0" },
 };
 
@@ -80,8 +83,6 @@ export function rangesOverlap(aStart, aEnd, bStart, bEnd) {
   return aStart < bEnd && bStart < aEnd;
 }
 
-// Totes les dates (YYYY-MM-DD) compreses entre check_in (inclòs) i
-// check_out (exclòs) — útil per pintar un calendari mensual.
 export function expandDateRange(checkIn, checkOut) {
   const dates = [];
   let d = new Date(checkIn + "T00:00:00");

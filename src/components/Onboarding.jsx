@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Droplets, Mail, DoorOpen } from "lucide-react";
-import { COLOR, FLOORS } from "../config";
+import { COLOR, FLOORS, APP_NAME } from "../config";
 import { findDoorByEmail, registerDoorEmail, getDoorZone, setDoorZone } from "../supabaseClient";
 
 export default function Onboarding({ onComplete }) {
@@ -69,7 +69,7 @@ export default function Onboarding({ onComplete }) {
       <div className="w-full max-w-md rounded-2xl p-6" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
         <div className="flex items-center gap-2 mb-1" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>
           <Droplets size={20} style={{ color: COLOR.water }} />
-          <span className="text-lg font-bold">Cooperativa · Reserves</span>
+          <span className="text-lg font-bold">{APP_NAME} · Reserves</span>
         </div>
         <p className="text-sm mb-5" style={{ color: COLOR.inkSoft }}>
           Registra el teu correu una sola vegada: l'app recordarà qui ets i evitarà errors en escriure la porta a mà.
