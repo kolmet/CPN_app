@@ -1,7 +1,7 @@
 self.addEventListener("push", (event) => {
   let data = {};
   try { data = event.data ? event.data.json() : {}; } catch (e) { /* ignore */ }
-  const title = data.title || "Bugaderia Cooperativa";
+  const title = data.title || "Cal Paler Nou";
   const options = {
     body: data.body || "",
     tag: "bugaderia-avis",
@@ -17,4 +17,12 @@ self.addEventListener("notificationclick", (event) => {
       return clients.openWindow("/");
     })
   );
+});
+
+// Chrome exigeix que el service worker respongui almenys a "fetch" perquè
+// consideri el lloc instal·lable com a app (criteri clàssic del
+// "beforeinstallprompt"). Aquí simplement deixem passar la petició normal
+// a la xarxa, sense afegir cap mena de caché.
+self.addEventListener("fetch", (event) => {
+  event.respondWith(fetch(event.request));
 });
