@@ -143,6 +143,7 @@ export default function YearEndTools({ identity, showToast }) {
       <label className="block text-xs mb-1" style={{ color: COLOR.inkSoft }}>Any</label>
       <input type="number" value={year} onChange={e => { setYear(e.target.value); setStep(1); }}
         className="px-3 py-2 rounded-lg text-sm mb-3" style={{ border: `1px solid ${COLOR.line}` }} />
+      <p className="text-xs mb-3" style={{ color: COLOR.danger }}>[Depuració temporal] Pas actual: {step} · Ocupat: {busy ? "sí" : "no"}</p>
 
       <div className="flex flex-col gap-2">
         <button onClick={exportCsv} disabled={busy}
