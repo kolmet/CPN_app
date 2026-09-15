@@ -58,6 +58,10 @@ export default function YearEndTools({ identity, showToast }) {
     getRecentAuditLog(10).then(setAuditLog);
   }, []);
 
+  function safeToast(msg) {
+    try { showToast(msg); } catch (e) { console.error("showToast ha fallat:", e); }
+  }
+
   async function exportCsv() {
     setBusy(true);
     try {
@@ -85,10 +89,10 @@ export default function YearEndTools({ identity, showToast }) {
       // Un únic fitxer combinat: alguns navegadors mòbils bloquegen o
       // encallen la segona descàrrega automàtica si en llancem dues de cop.
       downloadCsv(`reserves-${y}.csv`, toCsv([...laundryRows, ...roomRows], COMBINED_HEADERS));
-      showToast(`Exportats ${laundryRows.length} torns de bugaderia i ${roomRows.length} d'espais.`);
       setStep(2);
+      safeToast(`Exportats ${laundryRows.length} torns de bugaderia i ${roomRows.length} d'espais.`);
     } catch (e) {
-      showToast("No s'ha pogut exportar: " + (e?.message || "error desconegut"));
+      safeToast("No s'ha pogut exportar: " + (e?.message || "error desconegut"));
     } finally {
       setBusy(false);
     }
@@ -105,29 +109,33 @@ export default function YearEndTools({ identity, showToast }) {
         if (m && counts[m] !== undefined) counts[m]++;
       });
       const ok = await saveYearlySummary(y, counts);
-      showToast(ok ? "Resum anual desat ✔ Ja es pot netejar el detall si vols." : "No s'ha pogut desar el resum.");
       if (ok) setStep(3);
+      safeToast(ok ? "Resum anual desat ✔ Ja es pot netejar el detall si vols." : "No s'ha pogut desar el resum.");
+    } catch (e) {
+      safeToast("No s'ha pogut desar el resum: " + (e?.message || "error desconegut"));
     } finally {
       setBusy(false);
     }
   }
 
   async function doDelete() {
-    if (isCurrentOrFutureYear) { showToast("No es pot esborrar l'any en curs."); return; }
-    if (confirmText !== year) { showToast("Escriu l'any exacte per confirmar."); return; }
+    if (isCurrentOrFutureYear) { safeToast("No es pot esborrar l'any en curs."); return; }
+    if (confirmText !== year) { safeToast("Escriu l'any exacte per confirmar."); return; }
     setBusy(true);
     try {
       const y = Number(year);
       const ok1 = await deleteBookingsForYear(y);
       const ok2 = await deleteRoomBookingsForYear(y);
+      setStep(1); setConfirmText("");
       if (ok1 && ok2) {
         await logAuditAction("delete_data", y, identity?.door, identity?.nickname);
         setAuditLog(await getRecentAuditLog(10));
-        showToast(`Dades detallades de ${y} eliminades. El resum anual es conserva.`);
+        safeToast(`Dades detallades de ${y} eliminades. El resum anual es conserva.`);
       } else {
-        showToast("Hi ha hagut un problema eliminant les dades.");
+        safeToast("Hi ha hagut un problema eliminant les dades.");
       }
-      setStep(1); setConfirmText("");
+    } catch (e) {
+      safeToast("No s'ha pogut eliminar: " + (e?.message || "error desconegut"));
     } finally {
       setBusy(false);
     }
@@ -143,7 +151,6 @@ export default function YearEndTools({ identity, showToast }) {
       <label className="block text-xs mb-1" style={{ color: COLOR.inkSoft }}>Any</label>
       <input type="number" value={year} onChange={e => { setYear(e.target.value); setStep(1); }}
         className="px-3 py-2 rounded-lg text-sm mb-3" style={{ border: `1px solid ${COLOR.line}` }} />
-      <p className="text-xs mb-3" style={{ color: COLOR.danger }}>[Depuració temporal] Pas actual: {step} · Ocupat: {busy ? "sí" : "no"}</p>
 
       <div className="flex flex-col gap-2">
         <button onClick={exportCsv} disabled={busy}
