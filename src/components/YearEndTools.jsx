@@ -37,11 +37,12 @@ function downloadCsv(filename, content) {
   const a = document.createElement("a");
   a.href = url; a.download = filename;
   document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  // Petit retard abans de revocar la URL: en alguns mòbils, revocar-la
+  // massa d'hora talla la descàrrega abans que comenci de veritat.
+  setTimeout(() => URL.revokeObjectURL(url), 2000);
 }
 
-const LAUNDRY_HEADERS = ["data", "porta", "nickname", "rentadora", "zona", "hora_inici", "durada_min", "estat"];
-const SPACE_HEADERS = ["espai", "porta", "nickname", "entrada", "sortida", "inici_min", "fi_min", "subarea", "participants", "per_a", "estat"];
+const COMBINED_HEADERS = ["categoria", "porta", "nickname", "data_entrada", "data_sortida", "detall", "inici_min", "fi_min", "subarea", "participants", "per_a", "estat"];
 
 export default function YearEndTools({ identity, showToast }) {
   const currentYear = new Date().getFullYear();
@@ -68,18 +69,22 @@ export default function YearEndTools({ identity, showToast }) {
       const spaceMap = Object.fromEntries(spaces.map(s => [s.id, s]));
 
       const laundryRows = laundry.map(b => ({
-        data: b.booking_date, porta: b.door, nickname: b.nickname || "",
-        rentadora: machineMap[b.machine_id]?.machine_number ?? "", zona: machineMap[b.machine_id]?.zone_id ?? "",
-        hora_inici: b.start_hour, durada_min: b.duration_minutes, estat: b.status,
+        categoria: "Bugaderia", porta: b.door, nickname: b.nickname || "",
+        data_entrada: b.booking_date, data_sortida: "",
+        detall: `Rentadora ${machineMap[b.machine_id]?.machine_number ?? "?"} (${machineMap[b.machine_id]?.zone_id ?? ""})`,
+        inici_min: b.start_hour * 60, fi_min: b.start_hour * 60 + b.duration_minutes,
+        subarea: "", participants: "", per_a: "", estat: b.status,
       }));
       const roomRows = rooms.map(b => ({
-        espai: spaceMap[b.room_id]?.name ?? b.room_id, porta: b.door, nickname: b.nickname || "",
-        entrada: b.check_in, sortida: b.check_out, inici_min: b.start_min ?? "", fi_min: b.end_min ?? "",
+        categoria: spaceMap[b.room_id]?.name ?? b.room_id, porta: b.door, nickname: b.nickname || "",
+        data_entrada: b.check_in, data_sortida: b.check_out, detall: "",
+        inici_min: b.start_min ?? "", fi_min: b.end_min ?? "",
         subarea: b.sub_area ?? "", participants: b.participants ?? "", per_a: b.external_name ?? "", estat: b.status,
       }));
 
-      downloadCsv(`bugaderia-${y}.csv`, toCsv(laundryRows, LAUNDRY_HEADERS));
-      downloadCsv(`espais-${y}.csv`, toCsv(roomRows, SPACE_HEADERS));
+      // Un únic fitxer combinat: alguns navegadors mòbils bloquegen o
+      // encallen la segona descàrrega automàtica si en llancem dues de cop.
+      downloadCsv(`reserves-${y}.csv`, toCsv([...laundryRows, ...roomRows], COMBINED_HEADERS));
       showToast(`Exportats ${laundryRows.length} torns de bugaderia i ${roomRows.length} d'espais.`);
       setStep(2);
     } catch (e) {
