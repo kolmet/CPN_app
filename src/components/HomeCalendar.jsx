@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { COLOR, MODULES, SPACE_MODULE, WEEKDAYS_CA, MONTHS_CA, formatMinutes, expandDateRange, ymd } from "../config";
-import { supabase, getSpaces, getSpaceBookings } from "../supabaseClient";
+import { getSpaces, getSpaceBookings } from "../supabaseClient";
+import { onTableChange } from "../realtime";
 
 function todayStr() { return ymd(new Date()); }
 
@@ -22,11 +23,8 @@ export default function HomeCalendar() {
 
   useEffect(() => {
     load();
-    const channel = supabase
-      .channel("home_calendar_bookings")
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_bookings" }, () => load())
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    const unsubscribe = onTableChange("room_bookings", load);
+    return () => unsubscribe();
   }, [load]);
 
   const dayMap = useMemo(() => {

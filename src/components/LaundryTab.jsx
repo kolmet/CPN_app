@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { ChevronDown, Droplets } from "lucide-react";
 import { COLOR, MODULES, FLOORS, START_HOURS, CLOSE_HOUR, buildDates, rangesOverlap } from "../config";
-import { supabase, getMachines, getBookings, createBooking, cancelBooking, finishBooking } from "../supabaseClient";
+import { getMachines, getBookings, createBooking, cancelBooking, finishBooking } from "../supabaseClient";
+import { onTableChange } from "../realtime";
 
 const DATES = buildDates();
 const style = MODULES.bugaderia;
@@ -35,11 +36,8 @@ export default function LaundryTab({ identity, showToast }) {
     getMachines().then(setMachines);
     loadBookings();
     const clock = setInterval(() => setNow(new Date()), 30000);
-    const channel = supabase
-      .channel("bookings_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => loadBookings())
-      .subscribe();
-    return () => { clearInterval(clock); supabase.removeChannel(channel); };
+    const unsubscribe = onTableChange("bookings", loadBookings);
+    return () => { clearInterval(clock); unsubscribe(); };
   }, [loadBookings]);
 
   async function handleCreate(payload) {

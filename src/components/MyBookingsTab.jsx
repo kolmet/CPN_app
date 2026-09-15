@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { Clock3, CheckCircle2, X } from "lucide-react";
 import { COLOR, MODULES, SPACE_MODULE, ymd, zoneById, expandDateRange, formatMinutes } from "../config";
-import { supabase, getMachines, getBookings, cancelBooking, finishBooking, getSpaces, getSpaceBookings, cancelSpaceBooking } from "../supabaseClient";
+import { getMachines, getBookings, cancelBooking, finishBooking, getSpaces, getSpaceBookings, cancelSpaceBooking } from "../supabaseClient";
+import { onTableChange } from "../realtime";
 import MonthCalendar from "./MonthCalendar";
 
 function todayStr() { return ymd(new Date()); }
@@ -29,12 +30,9 @@ export default function MyBookingsTab({ identity, showToast }) {
 
   useEffect(() => {
     load();
-    const channel = supabase
-      .channel("my_bookings_changes")
-      .on("postgres_changes", { event: "*", schema: "public", table: "bookings" }, () => load())
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_bookings" }, () => load())
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    const unsub1 = onTableChange("bookings", load);
+    const unsub2 = onTableChange("room_bookings", load);
+    return () => { unsub1(); unsub2(); };
   }, [load]);
 
   const todayKey = todayStr();

@@ -1,17 +1,22 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { X, Users, Trash2 } from "lucide-react";
-import { COLOR, MODULES, SPACE_DURATIONS_MIN, SPACE_SUB_AREAS, SPACE_FREEFORM_DURATION, SPACE_CLOSE_MIN, getSpaceStartMinutes, formatMinutes, formatDuration, expandDateRange, ymd, rangesOverlap } from "../config";
-import { supabase, getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking, cancelRecurrence } from "../supabaseClient";
+import { COLOR, MODULES, SPACE_DURATIONS_MIN, SPACE_SUB_AREAS, SPACE_SUB_AREA_GROUPS, SPACE_ASK_PARTICIPANTS, SPACE_FREEFORM_DURATION, SPACE_CLOSE_MIN, getSpaceStartMinutes, formatMinutes, formatDuration, expandDateRange, ymd, rangesOverlap } from "../config";
+import { getSpaces, getSpaceBookings, createSpaceBooking, cancelSpaceBooking, cancelRecurrence } from "../supabaseClient";
+import { onTableChange } from "../realtime";
 import MonthCalendar from "./MonthCalendar";
 
 function todayStr() { return ymd(new Date()); }
 
 // Dues reserves d'un mateix dia xoquen si se superposen en el temps I,
-// quan hi ha sub-àrees (Cuina/Sala/Tot), afecten la mateixa part de l'espai.
-function subAreasClash(a, b) {
+// quan hi ha sub-àrees, afecten físicament el mateix tros de l'espai
+// (p.ex. "sala" i "sala-parcial" comparteixen espai; "cuina" no hi xoca).
+function subAreasClash(spaceId, a, b) {
   if (!a || !b) return true; // sense sub-àrees: qualsevol reserva ocupa tot l'espai
   if (a === "tot" || b === "tot") return true;
-  return a === b;
+  const groups = SPACE_SUB_AREA_GROUPS[spaceId];
+  const groupA = groups?.[a] ?? a;
+  const groupB = groups?.[b] ?? b;
+  return groupA === groupB;
 }
 
 export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
@@ -27,11 +32,8 @@ export default function SpaceTab({ moduleKey, spaceIds, identity, showToast }) {
 
   useEffect(() => {
     load();
-    const channel = supabase
-      .channel(`space_bookings_${moduleKey}`)
-      .on("postgres_changes", { event: "*", schema: "public", table: "room_bookings" }, () => load())
-      .subscribe();
-    return () => supabase.removeChannel(channel);
+    const unsubscribe = onTableChange("room_bookings", load);
+    return () => unsubscribe();
   }, [load, moduleKey]);
 
   async function handleCreate(payload) {
@@ -117,9 +119,10 @@ function SpaceCard({ space, style, identity, bookings, onCreate, onCreateMany, o
             const areaPart = b.sub_area && b.sub_area !== "tot" ? ` · ${subAreas?.find(a => a.id === b.sub_area)?.name || b.sub_area}` : "";
             const who = b.external_name ? `per a ${b.external_name}` : (isMine ? "tu" : (b.nickname || `porta ${b.door}`));
             const notePart = b.external_note ? ` — ${b.external_note}` : "";
+            const participantsPart = b.participants ? ` · ${b.participants} pers.` : "";
             return (
               <div key={b.id} className="flex items-center justify-between text-xs rounded-lg px-2.5 py-1.5" style={{ background: COLOR.bg }}>
-                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart}{areaPart} · {who}{notePart}{b.recurrence_id ? " · repetitiva" : ""}</span>
+                <span>{isHourly ? b.check_in : `${b.check_in} → ${b.check_out}`}{timePart}{areaPart} · {who}{notePart}{participantsPart}{b.recurrence_id ? " · repetitiva" : ""}</span>
                 {isMine && (
                   <span className="flex items-center gap-2 shrink-0">
                     <button onClick={() => onCancel(b.id)} className="underline" style={{ color: COLOR.danger }}>anul·la</button>
@@ -151,6 +154,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
   const [duration, setDuration] = useState(30);
   const [endMin, setEndMin] = useState(null);
   const [activityNote, setActivityNote] = useState("");
+  const [participants, setParticipants] = useState("");
   const [forOther, setForOther] = useState(false);
   const [externalName, setExternalName] = useState("");
   const [externalNote, setExternalNote] = useState("");
@@ -165,7 +169,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
 
   // Reserves que xoquen amb la sub-àrea que s'està mirant ara mateix
   const relevantBookings = useMemo(
-    () => bookingsForDate.filter(b => subAreasClash(b.sub_area, subArea)),
+    () => bookingsForDate.filter(b => subAreasClash(space.id, b.sub_area, subArea)),
     [bookingsForDate, subArea]
   );
 
@@ -201,6 +205,7 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
         room_id: space.id, door: identity.door, nickname: identity.nickname,
         start_min: startMin, end_min: finalEndMin,
         sub_area: subAreas ? subArea : null,
+        participants: SPACE_ASK_PARTICIPANTS[space.id] && participants ? Number(participants) : null,
         external_name: forOther ? externalName.trim() || null : null,
         external_note: note,
       };
@@ -339,6 +344,13 @@ function BookingModal({ space, style, isHourly, subAreas, date, identity, bookin
                   <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>De què es tracta? (opcional)</label>
                   <input value={activityNote} onChange={e => setActivityNote(e.target.value)} placeholder="p.ex. 'assemblea', 'ioga', 'festa d'aniversari'"
                     className="px-3 py-2 rounded-lg text-sm mb-4 w-full" style={{ border: `1px solid ${COLOR.line}` }} />
+                  {SPACE_ASK_PARTICIPANTS[space.id] && (
+                    <>
+                      <label className="block text-xs font-medium mb-1" style={{ color: COLOR.inkSoft }}>Nombre de participants (opcional)</label>
+                      <input type="number" min="1" value={participants} onChange={e => setParticipants(e.target.value)} placeholder="p.ex. 8"
+                        className="px-3 py-2 rounded-lg text-sm mb-4 w-full" style={{ border: `1px solid ${COLOR.line}` }} />
+                    </>
+                  )}
                 </>
               )}
             </>

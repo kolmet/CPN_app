@@ -108,20 +108,35 @@ export const SPACE_FREEFORM_DURATION = {
   "room-bicicletes": true,
 };
 
-// La Sala Polivalent es pot reservar per parts: només la cuina, només la
-// sala, o tot l'espai (que bloqueja les dues parts alhora).
+// La Sala Polivalent es pot reservar per parts: només la cuina, la sala
+// sencera, una part de la sala (parcial), o tot l'espai (que bloqueja
+// totes les parts alhora). "sala" i "sala-parcial" comparteixen el mateix
+// espai físic, així que es bloquegen l'una a l'altra.
 // Les bicicletes són dos recursos independents: reservar-ne una no bloqueja
 // l'altra.
 export const SPACE_SUB_AREAS = {
   "room-polivalent": [
     { id: "cuina", name: "Cuina" },
     { id: "sala", name: "Sala" },
+    { id: "sala-parcial", name: "Sala parcial" },
     { id: "tot", name: "Tot l'espai" },
   ],
   "room-bicicletes": [
     { id: "bici1", name: "Bicicleta 1" },
     { id: "bici2", name: "Bicicleta 2" },
   ],
+};
+
+// Quines sub-àrees comparteixen físicament el mateix espai (a banda de
+// "tot", que sempre xoca amb qualsevol altra). Si dues sub-àrees són al
+// mateix grup, reservar-ne una bloqueja l'altra.
+export const SPACE_SUB_AREA_GROUPS = {
+  "room-polivalent": { cuina: "cuina", sala: "sala", "sala-parcial": "sala", tot: "tot" },
+};
+
+// Espais on, a més de l'hora, es demana el nombre de participants.
+export const SPACE_ASK_PARTICIPANTS = {
+  "room-polivalent": true,
 };
 
 export function ymd(d) {
