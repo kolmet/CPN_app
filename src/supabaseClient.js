@@ -130,3 +130,13 @@ export async function getYearlySummary() {
   const { data } = await supabase.from("yearly_summary").select("*").order("year");
   return data ?? [];
 }
+
+// ---------- Registre d'auditoria ----------
+export async function logAuditAction(action, year, door, nickname) {
+  const { error } = await supabase.from("audit_log").insert({ action, year, door, nickname });
+  return !error;
+}
+export async function getRecentAuditLog(limit = 10) {
+  const { data } = await supabase.from("audit_log").select("*").order("created_at", { ascending: false }).limit(limit);
+  return data ?? [];
+}

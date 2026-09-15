@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { COLOR, SPACE_MODULE } from "../config";
 import {
   getMachines, getSpaces, getBookingsForYear, getRoomBookingsForYear,
   deleteBookingsForYear, deleteRoomBookingsForYear, saveYearlySummary,
+  logAuditAction, getRecentAuditLog,
 } from "../supabaseClient";
 
 function toCsv(rows, headers) {
@@ -15,10 +16,23 @@ function toCsv(rows, headers) {
   rows.forEach(r => lines.push(headers.map(h => esc(r[h])).join(",")));
   return lines.join("\n");
 }
+// Converteix el text a bytes Windows-1252 ("ANSI"). Per als accents i la ç
+// que fem servir, el valor de byte coincideix amb el codi Unicode del
+// caràcter, així que no cal cap taula de conversió complexa.
+function toWindows1252Bytes(str) {
+  const bytes = new Uint8Array(str.length);
+  for (let i = 0; i < str.length; i++) {
+    const code = str.charCodeAt(i);
+    bytes[i] = code <= 0xff ? code : 0x3f; // '?' si hi ha algun caràcter fora de rang
+  }
+  return bytes;
+}
+
 function downloadCsv(filename, content) {
-  // El BOM (\uFEFF) fa que l'Excel llegeixi els accents i la ç correctament
-  // en lloc de mostrar-los mal codificats.
-  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  // Alguns Excel ignoren el BOM d'UTF-8 i sempre esperen la codificació
+  // "ANSI" clàssica de Windows. Generem el fitxer directament en
+  // Windows-1252 per evitar dependre de com detecti la codificació.
+  const blob = new Blob([toWindows1252Bytes(content)], { type: "text/csv;charset=windows-1252;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename;
@@ -29,11 +43,19 @@ function downloadCsv(filename, content) {
 const LAUNDRY_HEADERS = ["data", "porta", "nickname", "rentadora", "zona", "hora_inici", "durada_min", "estat"];
 const SPACE_HEADERS = ["espai", "porta", "nickname", "entrada", "sortida", "inici_min", "fi_min", "subarea", "participants", "per_a", "estat"];
 
-export default function YearEndTools({ showToast }) {
-  const [year, setYear] = useState(String(new Date().getFullYear() - 1));
+export default function YearEndTools({ identity, showToast }) {
+  const currentYear = new Date().getFullYear();
+  const [year, setYear] = useState(String(currentYear - 1));
   const [busy, setBusy] = useState(false);
   const [step, setStep] = useState(1); // 1: cal exportar, 2: exportat, 3: resum desat -> es pot netejar
   const [confirmText, setConfirmText] = useState("");
+  const [auditLog, setAuditLog] = useState([]);
+
+  const isCurrentOrFutureYear = Number(year) >= currentYear;
+
+  useEffect(() => {
+    getRecentAuditLog(10).then(setAuditLog);
+  }, []);
 
   async function exportCsv() {
     setBusy(true);
@@ -61,7 +83,7 @@ export default function YearEndTools({ showToast }) {
       showToast(`Exportats ${laundryRows.length} torns de bugaderia i ${roomRows.length} d'espais.`);
       setStep(2);
     } catch (e) {
-      showToast("No s'ha pogut exportar.");
+      showToast("No s'ha pogut exportar: " + (e?.message || "error desconegut"));
     } finally {
       setBusy(false);
     }
@@ -86,13 +108,20 @@ export default function YearEndTools({ showToast }) {
   }
 
   async function doDelete() {
+    if (isCurrentOrFutureYear) { showToast("No es pot esborrar l'any en curs."); return; }
     if (confirmText !== year) { showToast("Escriu l'any exacte per confirmar."); return; }
     setBusy(true);
     try {
       const y = Number(year);
       const ok1 = await deleteBookingsForYear(y);
       const ok2 = await deleteRoomBookingsForYear(y);
-      showToast(ok1 && ok2 ? `Dades detallades de ${y} eliminades. El resum anual es conserva.` : "Hi ha hagut un problema eliminant les dades.");
+      if (ok1 && ok2) {
+        await logAuditAction("delete_data", y, identity?.door, identity?.nickname);
+        setAuditLog(await getRecentAuditLog(10));
+        showToast(`Dades detallades de ${y} eliminades. El resum anual es conserva.`);
+      } else {
+        showToast("Hi ha hagut un problema eliminant les dades.");
+      }
       setStep(1); setConfirmText("");
     } finally {
       setBusy(false);
@@ -120,7 +149,12 @@ export default function YearEndTools({ showToast }) {
           2. Desa el resum anual (per a les gràfiques)
         </button>
 
-        {step >= 3 && (
+        {step >= 3 && isCurrentOrFutureYear && (
+          <div className="mt-2 p-3 rounded-lg text-xs" style={{ background: COLOR.bg, color: COLOR.inkSoft }}>
+            No es pot esborrar el detall de l'any en curs ({currentYear}). Aquesta opció només és per a anys ja tancats.
+          </div>
+        )}
+        {step >= 3 && !isCurrentOrFutureYear && (
           <div className="mt-2 p-3 rounded-lg" style={{ background: "#FDEDEB", border: `1px solid ${COLOR.danger}` }}>
             <p className="text-xs mb-2" style={{ color: COLOR.danger }}>
               Això esborrarà per sempre totes les reserves detallades de {year} (qui va reservar què i quan).
@@ -135,6 +169,20 @@ export default function YearEndTools({ showToast }) {
           </div>
         )}
       </div>
+
+      {auditLog.length > 0 && (
+        <div className="mt-4 pt-3" style={{ borderTop: `1px solid ${COLOR.line}` }}>
+          <div className="text-xs font-semibold uppercase mb-2" style={{ color: COLOR.inkSoft }}>Registre d'accions</div>
+          <div className="space-y-1">
+            {auditLog.map(a => (
+              <div key={a.id} className="text-xs" style={{ color: COLOR.inkSoft }}>
+                {new Date(a.created_at).toLocaleString("ca-ES")} · <b style={{ color: COLOR.ink }}>{a.nickname || "?"}</b> (porta {a.door || "?"}) —
+                {a.action === "delete_data" ? ` ha eliminat el detall de ${a.year}` : ` ${a.action} (${a.year})`}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

@@ -156,7 +156,7 @@ export default function StatsTab({ identity, showToast }) {
         </div>
       )}
 
-      <YearEndTools showToast={showToast} />
+      <YearEndTools identity={identity} showToast={showToast} />
     </div>
   );
 }
