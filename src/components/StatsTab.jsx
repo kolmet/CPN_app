@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { BarChart, Bar, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
 import { COLOR, MODULES, SPACE_MODULE, FLAT_ZONES, shortZoneLabel, ymd, MONTHS_CA } from "../config";
-import { getMachines, getBookings, getSpaces, getSpaceBookings } from "../supabaseClient";
+import { getMachines, getBookings, getSpaces, getSpaceBookings, getYearlySummary } from "../supabaseClient";
 import MonthCalendar from "./MonthCalendar";
+import YearEndTools from "./YearEndTools";
 
 function addDays(n) { const d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
 const style = MODULES.stats;
 
-export default function StatsTab({ identity }) {
+export default function StatsTab({ identity, showToast }) {
   const [machines, setMachines] = useState([]);
   const [bookings, setBookings] = useState([]);
   const [yearBookings, setYearBookings] = useState([]);
   const [spaceBookings, setSpaceBookings] = useState([]);
+  const [yearlySummary, setYearlySummary] = useState([]);
 
   useEffect(() => {
     getMachines().then(setMachines);
@@ -25,6 +27,7 @@ export default function StatsTab({ identity }) {
       const bk = await getSpaceBookings(ids, addDays(-60));
       setSpaceBookings(bk);
     });
+    getYearlySummary().then(setYearlySummary);
   }, []);
 
   const stats = useMemo(() => {
@@ -56,7 +59,7 @@ export default function StatsTab({ identity }) {
   }, [yearBookings, identity.door]);
 
   const spaceUsage = useMemo(() => {
-    const counts = { hostes: 0, polivalent: 0, moviment: 0 };
+    const counts = { hostes: 0, polivalent: 0, moviment: 0, bicicletes: 0 };
     spaceBookings.forEach(b => {
       const moduleKey = SPACE_MODULE[b.room_id];
       if (moduleKey && counts[moduleKey] !== undefined) counts[moduleKey]++;
@@ -65,8 +68,18 @@ export default function StatsTab({ identity }) {
       { name: "Hostes", total: counts.hostes, fill: MODULES.hostes.ink },
       { name: "Polivalent", total: counts.polivalent, fill: MODULES.polivalent.ink },
       { name: "Moviment", total: counts.moviment, fill: MODULES.moviment.ink },
+      { name: "Bicicletes", total: counts.bicicletes, fill: MODULES.bicicletes.ink },
     ];
   }, [spaceBookings]);
+
+  const yearlyEvolution = useMemo(() => {
+    const byYear = {};
+    yearlySummary.forEach(r => {
+      byYear[r.year] = byYear[r.year] || { year: String(r.year) };
+      byYear[r.year][r.category] = r.total_bookings;
+    });
+    return Object.values(byYear).sort((a, b) => a.year.localeCompare(b.year));
+  }, [yearlySummary]);
 
   return (
     <div className="px-5 space-y-4">
@@ -109,7 +122,7 @@ export default function StatsTab({ identity }) {
 
       <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
         <div className="font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Ús dels espais comuns (últims 60 dies)</div>
-        <p className="text-xs mb-2" style={{ color: COLOR.inkSoft }}>Nombre de reserves de Hostes, Sala Polivalent i Sala de Moviment.</p>
+        <p className="text-xs mb-2" style={{ color: COLOR.inkSoft }}>Nombre de reserves de Hostes, Sala Polivalent, Sala de Moviment i Bicicletes.</p>
         <ResponsiveContainer width="100%" height={180}>
           <BarChart data={spaceUsage}>
             <CartesianGrid strokeDasharray="3 3" stroke={COLOR.line} />
@@ -122,6 +135,28 @@ export default function StatsTab({ identity }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+
+      {yearlyEvolution.length > 0 && (
+        <div className="rounded-2xl p-4" style={{ background: COLOR.surface, border: `1px solid ${COLOR.line}` }}>
+          <div className="font-bold mb-2" style={{ fontFamily: "'Space Grotesk', sans-serif" }}>Evolució per anys</div>
+          <p className="text-xs mb-2" style={{ color: COLOR.inkSoft }}>Totals guardats a cada tancament d'any (es conserven encara que s'esborri el detall).</p>
+          <ResponsiveContainer width="100%" height={220}>
+            <BarChart data={yearlyEvolution}>
+              <CartesianGrid strokeDasharray="3 3" stroke={COLOR.line} />
+              <XAxis dataKey="year" tick={{ fontSize: 11 }} />
+              <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+              <Tooltip />
+              <Bar dataKey="bugaderia" stackId="a" fill={MODULES.bugaderia.ink} />
+              <Bar dataKey="hostes" stackId="a" fill={MODULES.hostes.ink} />
+              <Bar dataKey="polivalent" stackId="a" fill={MODULES.polivalent.ink} />
+              <Bar dataKey="moviment" stackId="a" fill={MODULES.moviment.ink} />
+              <Bar dataKey="bicicletes" stackId="a" fill={MODULES.bicicletes.ink} radius={[6, 6, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      <YearEndTools showToast={showToast} />
     </div>
   );
 }
