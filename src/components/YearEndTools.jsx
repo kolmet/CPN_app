@@ -16,7 +16,9 @@ function toCsv(rows, headers) {
   return lines.join("\n");
 }
 function downloadCsv(filename, content) {
-  const blob = new Blob([content], { type: "text/csv;charset=utf-8;" });
+  // El BOM (\uFEFF) fa que l'Excel llegeixi els accents i la ç correctament
+  // en lloc de mostrar-los mal codificats.
+  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url; a.download = filename;
