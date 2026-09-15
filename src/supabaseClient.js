@@ -103,3 +103,30 @@ export async function cancelRecurrence(recurrenceId, door) {
   const { error } = await supabase.from("room_bookings").update({ status: "cancelada" }).eq("recurrence_id", recurrenceId).eq("door", door);
   return !error;
 }
+
+// ---------- Tancament d'any: exportació i neteja ----------
+export async function getBookingsForYear(year) {
+  const { data } = await supabase.from("bookings").select("*").gte("booking_date", `${year}-01-01`).lte("booking_date", `${year}-12-31`);
+  return data ?? [];
+}
+export async function getRoomBookingsForYear(year) {
+  const { data } = await supabase.from("room_bookings").select("*").gte("check_in", `${year}-01-01`).lte("check_in", `${year}-12-31`);
+  return data ?? [];
+}
+export async function deleteBookingsForYear(year) {
+  const { error } = await supabase.from("bookings").delete().gte("booking_date", `${year}-01-01`).lte("booking_date", `${year}-12-31`);
+  return !error;
+}
+export async function deleteRoomBookingsForYear(year) {
+  const { error } = await supabase.from("room_bookings").delete().gte("check_in", `${year}-01-01`).lte("check_in", `${year}-12-31`);
+  return !error;
+}
+export async function saveYearlySummary(year, categoryCounts) {
+  const rows = Object.entries(categoryCounts).map(([category, total_bookings]) => ({ year, category, total_bookings }));
+  const { error } = await supabase.from("yearly_summary").upsert(rows, { onConflict: "year,category" });
+  return !error;
+}
+export async function getYearlySummary() {
+  const { data } = await supabase.from("yearly_summary").select("*").order("year");
+  return data ?? [];
+}
