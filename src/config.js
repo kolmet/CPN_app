@@ -58,7 +58,7 @@ export const MODULES = {
   moviment: { label: "Sala de Cos i Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
   bicicletes: { label: "Bicicletes", icon: "bike", bg: "#FBF0C7", ink: "#9C7A12" },
   taller: { label: "Taller", icon: "hammer", bg: "#E9DCCB", ink: "#6B4A28" },
-  terrasses: { label: "Terrasses", icon: "terrace", bg: "#D9F0F5", ink: "#1D6E80" },
+  terrasses: { label: "Terrasses", icon: "terrace", bg: "#DCEEFB", ink: "#1565C0" },
   hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
   stats: { label: "Estadístiques", icon: "chart", bg: "#EFE3F7", ink: "#6B3FA0" },
 };

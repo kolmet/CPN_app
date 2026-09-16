@@ -95,7 +95,10 @@ export default function HomeCalendar() {
         <div className="flex flex-wrap gap-3 mt-3 text-[11px]" style={{ color: COLOR.inkSoft }}>
           <Legend color={MODULES.hostes.ink} label="Hostes" />
           <Legend color={MODULES.polivalent.ink} label="Sala Polivalent" />
-          <Legend color={MODULES.moviment.ink} label="Sala de Moviment" />
+          <Legend color={MODULES.moviment.ink} label="Sala Cos" />
+          <Legend color={MODULES.bicicletes.ink} label="Bicicletes" />
+          <Legend color={MODULES.taller.ink} label="Taller" />
+          <Legend color={MODULES.terrasses.ink} label="Terrasses" />
         </div>
 
         {monthEntries.length > 0 && (
