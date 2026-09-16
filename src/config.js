@@ -151,6 +151,7 @@ export const SPACE_SUB_AREA_GROUPS = {
 // Espais on, a més de l'hora, es demana el nombre de participants.
 export const SPACE_ASK_PARTICIPANTS = {
   "room-polivalent": true,
+  "room-terrasses": true,
 };
 
 export function ymd(d) {
