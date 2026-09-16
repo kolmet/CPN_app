@@ -59,7 +59,7 @@ export default function StatsTab({ identity, showToast }) {
   }, [yearBookings, identity.door]);
 
   const spaceUsage = useMemo(() => {
-    const counts = { hostes: 0, polivalent: 0, moviment: 0, bicicletes: 0 };
+    const counts = { hostes: 0, polivalent: 0, moviment: 0, bicicletes: 0, taller: 0, terrasses: 0 };
     spaceBookings.forEach(b => {
       const moduleKey = SPACE_MODULE[b.room_id];
       if (moduleKey && counts[moduleKey] !== undefined) counts[moduleKey]++;
@@ -69,6 +69,8 @@ export default function StatsTab({ identity, showToast }) {
       { name: "Polivalent", total: counts.polivalent, fill: MODULES.polivalent.ink },
       { name: "Moviment", total: counts.moviment, fill: MODULES.moviment.ink },
       { name: "Bicicletes", total: counts.bicicletes, fill: MODULES.bicicletes.ink },
+      { name: "Taller", total: counts.taller, fill: MODULES.taller.ink },
+      { name: "Terrasses", total: counts.terrasses, fill: MODULES.terrasses.ink },
     ];
   }, [spaceBookings]);
 

@@ -336,7 +336,33 @@ export function LockIcon({ color = "currentColor", size = 22 }) {
   );
 }
 
-const ICONS = {
+export function HammerIcon({ color = "currentColor", size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <rect x="5" y="5" width="17" height="11" rx="2" transform="rotate(-45 13.5 10.5)" />
+        <path d="M18 15L8 25" />
+        <path d="M8 25L37 42l4-4L15 9" />
+      </g>
+    </svg>
+  );
+}
+
+export function TerraceIcon({ color = "currentColor", size = 28 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" style={{ filter: "url(#sketch-filter)" }}>
+      <g stroke={color} {...strokeProps}>
+        <circle cx="35" cy="11" r="5" />
+        <path d="M35 2v3M35 17v3M27 11h3M40 11h3M29.5 5.5l2 2M40.5 5.5l-2 2M29.5 16.5l2-2M40.5 16.5l-2-2" />
+        <path d="M6 40h36" />
+        <path d="M8 28h30" />
+        <path d="M8 28v12M15 28v12M22 28v12M29 28v12M36 28v12" />
+      </g>
+    </svg>
+  );
+}
+
+export const ICONS = {
   washer: WasherIcon,
   bed: BedIcon,
   chart: ChartIcon,
@@ -344,6 +370,8 @@ const ICONS = {
   movement: MovementIcon,
   clock: ClockIcon,
   bike: BikeIcon,
+  hammer: HammerIcon,
+  terrace: TerraceIcon,
 };
 
 

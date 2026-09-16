@@ -103,7 +103,7 @@ export default function YearEndTools({ identity, showToast }) {
     try {
       const y = Number(year);
       const [laundry, rooms] = await Promise.all([getBookingsForYear(y), getRoomBookingsForYear(y)]);
-      const counts = { bugaderia: laundry.length, hostes: 0, polivalent: 0, moviment: 0, bicicletes: 0 };
+      const counts = { bugaderia: laundry.length, hostes: 0, polivalent: 0, moviment: 0, bicicletes: 0, taller: 0, terrasses: 0 };
       rooms.forEach(b => {
         const m = SPACE_MODULE[b.room_id];
         if (m && counts[m] !== undefined) counts[m]++;

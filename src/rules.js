@@ -74,4 +74,30 @@ export const SPACE_RULES = {
       { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
     ],
   },
+  // ⚠️ Provisional: cap document rebut per a aquest espai. Revisa-ho i
+  // canvia el text per l'oficial quan el tingueu.
+  taller: {
+    title: "Taller",
+    items: [
+      { icon: "calendar", text: "Fem servir el sistema de reserves, indicant sempre la franja horària d'ús." },
+      { icon: "broom", text: "Deixem l'espai net i endreçat en acabar, retirant les restes de material." },
+      { icon: "chair", text: "Cuidem les eines i el mobiliari, i les tornem al seu lloc." },
+      { icon: "washer", text: "Comuniquem qualsevol eina espatllada o incidència perquè es pugui reparar." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
+    ],
+  },
+  // ⚠️ Provisional: cap document rebut per a aquest espai. Revisa-ho i
+  // canvia el text per l'oficial quan el tingueu.
+  terrasses: {
+    title: "Terrasses",
+    items: [
+      { icon: "calendar", text: "Fem servir el sistema de reserves, indicant sempre la franja horària d'ús." },
+      { icon: "clock", text: "Respectem els horaris i el volum, sobretot a les nits." },
+      { icon: "broom", text: "Deixem l'espai net i endreçat en acabar." },
+      { icon: "nosmoking", text: "Si es fuma, es fa lluny de finestres i portes obertes, i es recullen les puntes." },
+      { icon: "speech", text: "Davant d'un conflicte d'usos, prioritzem el diàleg." },
+      { icon: "people", text: "Totes som responsables de cuidar aquest espai." },
+    ],
+  },
 };

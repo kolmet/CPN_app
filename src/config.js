@@ -52,15 +52,25 @@ export const COLOR = {
 };
 
 // Estil visual (rajola + icona) de cada apartat principal de l'app.
-// L'ordre d'aquest objecte és l'ordre en què surten les rajoles a l'inici.
 export const MODULES = {
   bugaderia: { label: "Bugaderia", icon: "washer", bg: "#DCEBFB", ink: "#2A5FA5" },
   polivalent: { label: "Sala Polivalent", icon: "kitchen", bg: "#FCE9D6", ink: "#B5651D" },
   moviment: { label: "Sala de Cos i Moviment", icon: "movement", bg: "#FDE1EC", ink: "#B23A6B" },
   bicicletes: { label: "Bicicletes", icon: "bike", bg: "#FBF0C7", ink: "#9C7A12" },
+  taller: { label: "Taller", icon: "hammer", bg: "#E9DCCB", ink: "#6B4A28" },
+  terrasses: { label: "Terrasses", icon: "terrace", bg: "#D9F0F5", ink: "#1D6E80" },
   hostes: { label: "Hostes", icon: "bed", bg: "#E1F3E1", ink: "#2E7D4F" },
   stats: { label: "Estadístiques", icon: "chart", bg: "#EFE3F7", ink: "#6B3FA0" },
 };
+
+// Quins mòduls surten a la rajola gran de la pantalla d'inici, i en quin
+// ordre. Bugaderia i Estadístiques no hi són: es mostren dalt de tot, al
+// costat de l'espai personal, per alliberar espai a la rejilla.
+export const HOME_GRID_MODULES = ["polivalent", "moviment", "bicicletes", "taller", "terrasses", "hostes"];
+
+// Mòduls que es mostren com a icona petita a la capçalera (fons blanc,
+// igual que "Els meus torns" i "Configuració").
+export const HEADER_MODULES = ["stats", "bugaderia"];
 
 // Franja horària per a les sales de reserva per hores (Polivalent/Moviment/
 // Bicicletes). Es pot triar l'hora d'inici cada 15 min. La durada per
@@ -125,6 +135,10 @@ export const SPACE_SUB_AREAS = {
     { id: "bici1", name: "Bicicleta 1" },
     { id: "bici2", name: "Bicicleta 2" },
   ],
+  "room-terrasses": [
+    { id: "gran", name: "Terrassa Gran (Escala B)" },
+    { id: "petita", name: "Terrasseta (Escala A)" },
+  ],
 };
 
 // Quines sub-àrees comparteixen físicament el mateix espai (a banda de
@@ -176,6 +190,9 @@ export const SPACE_MODULE = {
   "room-p2": "hostes",
   "room-polivalent": "polivalent",
   "room-moviment": "moviment",
+  "room-bicicletes": "bicicletes",
+  "room-taller": "taller",
+  "room-terrasses": "terrasses",
 };
 
 export const WEEKDAYS_CA = ["Dl", "Dt", "Dc", "Dj", "Dv", "Ds", "Dg"];
